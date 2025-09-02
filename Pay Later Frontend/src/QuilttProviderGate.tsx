@@ -38,6 +38,7 @@ export default function QuilttProviderGate({ children }: { children: React.React
     queryFn: async () => {
       if (!profileId) return [];
       const { data } = await api.get(`/quiltt/transactions/${profileId}`);
+      console.log("transactions",data);
       return data;
     },
     enabled: !!profileId,
@@ -48,6 +49,7 @@ export default function QuilttProviderGate({ children }: { children: React.React
     queryFn: async () => {
       if (!profileId) return [];
       const { data } = await api.get(`/quiltt/accounts/${profileId}`);
+      console.log("accounts",data);
       return data;
     },
     enabled: !!profileId,
