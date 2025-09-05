@@ -11,6 +11,10 @@ export async function signupUtil(name: string, email: string, password: string) 
 }
 
 export async function logoutUtil() {
-  const res = await api.post("/user/logout");
+  const res = await api.get("/user/logout");
+}
+
+export async function verifyUtil() {
+  const res = await api.get("/user/verify");
   return res.data;
 }

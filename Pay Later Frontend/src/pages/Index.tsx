@@ -4,10 +4,11 @@ import RewardsOverview from "@/components/ReawrdsOverview";
 
 import BillTypesSection from "@/components/BillTypesSection";
 import FAQSection from "@/components/FAQSection";
+import Footer from "@/components/ui/footer";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Header />
       <main>
         <HeroSection />
@@ -15,6 +16,7 @@ const Index = () => {
         <BillTypesSection />
         <FAQSection />
       </main>
+      <Footer />
     </div>
   );
 };

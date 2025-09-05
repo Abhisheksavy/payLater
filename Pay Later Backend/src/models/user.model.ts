@@ -5,8 +5,10 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
+  quilttUserId: string;
+  rewardPoints: number;
+  cashback: number;
   createdAt: Date;
-  plaidAccessToken?: Schema.Types.Mixed;
 }
 
 const userSchema = new Schema<IUser>(
@@ -14,7 +16,9 @@ const userSchema = new Schema<IUser>(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    plaidAccessToken: { type: Schema.Types.Mixed , default: null}
+    quilttUserId: { type: String, unique: true, sparse: true },
+    rewardPoints: { type: Number, required: true, default: 0 },
+    cashback: { type: Number, required: true, default: 0 },
   },
   { timestamps: true }
 );

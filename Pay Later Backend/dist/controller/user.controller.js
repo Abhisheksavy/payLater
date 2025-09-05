@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { signAccessToken } from "../utils/jwt.js";
+import { v4 as uuidv4 } from "uuid";
 class UserController {
     async register(req, res) {
         try {
@@ -10,7 +11,7 @@ class UserController {
                 return res.status(400).json({ message: "User already exists" });
             }
             const hashedPassword = await bcrypt.hash(password, 10);
-            const user = await User.create({ name, email, password: hashedPassword });
+            const user = await User.create({ name, email, password: hashedPassword, quilttUserId: uuidv4() });
             const token = signAccessToken({ id: user._id.toString(), email: user.email });
             res.cookie("token", token, {
                 httpOnly: true,
@@ -61,8 +62,25 @@ class UserController {
             res.status(500).json({ message: "Server error" });
         }
     }
-    verify(req, res) {
-        res.status(200).json({ message: "User is logged in." });
+    async verify(req, res) {
+        try {
+            if (!req.userId) {
+                return res.status(401).json({ message: "Unauthorized" });
+            }
+            const user = await User.findById(req.userId).select("_id name email createdAt");
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            return res.status(200).json({
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                createdAt: user.createdAt,
+            });
+        }
+        catch (err) {
+            return res.status(500).json({ message: "Server error" });
+        }
     }
 }
 export const userController = new UserController();

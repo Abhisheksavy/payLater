@@ -103,7 +103,7 @@ const billTypes = [
 
 const BillTypesSection = () => {
   return (
-    <section className="py-16 px-4 bg-gradient-to-br from-background to-muted/30">
+    <section className="py-16 px-4 ">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-foreground mb-4">

@@ -50,6 +50,7 @@ export default {
 					DEFAULT: 'hsl(var(--success))',
 					foreground: 'hsl(var(--success-foreground))'
 				},
+				primary_gray: "#4B5563",
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
 					foreground: 'hsl(var(--popover-foreground))'
@@ -100,7 +101,10 @@ export default {
 				'soft': 'var(--shadow-soft)',
 				'glow': 'var(--shadow-glow)',
 				'card': 'var(--shadow-card)'
-			}
+			},
+			fontFamily: {
+        myfont: ['Segoe'],
+      },
 		}
 	},
 	plugins: [tailwindcssAnimate],

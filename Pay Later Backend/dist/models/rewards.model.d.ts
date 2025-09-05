@@ -2,9 +2,9 @@ import mongoose, { Document, Types } from "mongoose";
 export interface IReward extends Document {
     _id: Types.ObjectId;
     userId: Types.ObjectId;
-    transactionId?: Types.ObjectId;
-    type: "cashback" | "coins";
+    transactionHistoryId: Types.ObjectId;
     amount: number;
+    cashback: number;
     status: "earned" | "redeemed" | "expired";
     description?: string;
 }

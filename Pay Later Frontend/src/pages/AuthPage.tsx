@@ -7,12 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
 import { CreditCard, Eye, EyeOff, Mail, User, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import Logo from '../assets/Logo.svg';
 
 const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login, signup } = useAuth();
   const { toast } = useToast();
+const navigate = useNavigate();
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -39,6 +42,10 @@ const AuthPage = () => {
     });
 
     setIsLoading(false);
+
+    if (result.success) {
+    navigate('/dashboard');
+  }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -73,19 +80,18 @@ const AuthPage = () => {
     });
 
     setIsLoading(false);
+
+    if (result.success) {
+    navigate('/dashboard');
+  }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-accent/20 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-primary-foreground bg-red-500" />
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Everyday Bill
-            </span>
+          <div className="flex items-center justify-center gap-2">
+            <img src={Logo} alt="Everyday Bill Logo" className="w-30 h-30 object-contain mb-4" />
           </div>
           <h1 className="text-2xl font-bold mb-2">Welcome to Everyday Bill Rewards</h1>
           <p className="text-muted-foreground">Start earning rewards on every bill</p>

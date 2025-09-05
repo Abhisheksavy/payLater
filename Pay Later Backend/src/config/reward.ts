@@ -1,19 +1,12 @@
-
-export type CashbackRuleKey =
-  | "Rent"
-  | "Utilities"
-  | "Subscriptions"
-  | "Insurance"
-  | "Telecom"
-  | "Education"
-  | "Other";
-
-export const REWARDS_RULES: Record<CashbackRuleKey, number> = {
-  Rent: 0.01,          // 1%
-  Utilities: 0.02,     // 2%
-  Subscriptions: 0.05, // 5%
-  Insurance: 0.015,    // 1.5%
-  Telecom: 0.02,       // 2%
-  Education: 0.01,     // 1%
-  Other: 0.005,        // 0.5%
+// config/reward.config.ts
+export const rewardConfig: Record<string, number> = {
+  "Rent/Mortgage": 0.01, // 1%
+  "Utilities": 0.02,     // 2%
+  "Subscription": 0.05,  // 5%
+  "Insurance": 0.01,
+  "Loan": 0.01,
+  "Other Fees": 0.03,
+  "Other": 0.02,
 };
+
+export const rewardMultiplier = 2; // global multiplier

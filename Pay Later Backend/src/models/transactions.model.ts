@@ -1,40 +1,25 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
 export interface ITransaction extends Document {
-  _id: Types.ObjectId;
-  userId: Types.ObjectId;
-  accountId: string;
+  userId: string;
   transactionId: string;
-  name: string;
-  merchantName?: string;
-  category?: string[];
+  date: Date;
   amount: number;
-  isoCurrencyCode: string;
-  date: string;
-  pending: boolean;
-  plaidData: any;
+  description: string;
+  merchant?: string | null;
+  accountId: string;
+  status: string;
 }
 
-const transactionSchema = new Schema<ITransaction>(
-  {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    accountId: { type: String, required: true },
-    transactionId: { type: String, required: true, unique: true },
-    name: { type: String, required: true },
-    merchantName: { type: String },
-    category: [{ type: String }],
-    amount: { type: Number, required: true },
-    isoCurrencyCode: { type: String, required: true },
-    date: { type: String, required: true },
-    pending: { type: Boolean, default: false },
-    plaidData: { type: Schema.Types.Mixed },
-  },
-  { timestamps: true }
-);
+const TransactionSchema = new Schema<ITransaction>({
+  userId: { type: String, required: true },
+  transactionId: { type: String, required: true },
+  date: { type: Date, required: true },
+  amount: { type: Number, required: true },
+  description: { type: String, required: true },
+  merchant: { type: String, default: null },
+  accountId: { type: String, required: true },
+  status: { type: String, required: true },
+});
 
-const Transaction = mongoose.model<ITransaction>(
-  "Transaction",
-  transactionSchema
-);
-
-export default Transaction;
+export const Transaction = model<ITransaction>("Transaction", TransactionSchema);

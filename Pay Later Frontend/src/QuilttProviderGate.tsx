@@ -28,9 +28,9 @@ export default function QuilttProviderGate({ children }: { children: React.React
     queryKey: ["quilttSession"],
     queryFn: async () => {
       const { data } = await api.post("/quiltt/sessions");
-      console.log("Session token fetched:", data.token);
       return data;
     },
+    retry: 1
   });
 
   const transactionsQuery = useQuery({
@@ -38,7 +38,6 @@ export default function QuilttProviderGate({ children }: { children: React.React
     queryFn: async () => {
       if (!profileId) return [];
       const { data } = await api.get(`/quiltt/transactions/${profileId}`);
-      console.log("transactions",data);
       return data;
     },
     enabled: !!profileId,
@@ -49,12 +48,31 @@ export default function QuilttProviderGate({ children }: { children: React.React
     queryFn: async () => {
       if (!profileId) return [];
       const { data } = await api.get(`/quiltt/accounts/${profileId}`);
-      console.log("accounts",data);
       return data;
     },
     enabled: !!profileId,
   });
 
+  const billsQuery = useQuery({
+    queryKey: ["bills"],
+    queryFn: async () => {
+      const { data } = await api.get(`/bill`);
+      console.log("bills", data);
+      return data;
+    },
+    enabled: !!profileId,
+  });
+
+  const detectBills = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post(`/bill/detect`);
+      console.log(data)
+      return data;
+    },
+    onSuccess: () => {
+      billsQuery.refetch();
+    },
+  });
   if (isLoading) return <p>Loading Quiltt...</p>;
   if (error) return <p>Failed to initialize Quiltt session</p>;
   if (!session?.token) return <p>No session token available</p>;
@@ -63,28 +81,6 @@ export default function QuilttProviderGate({ children }: { children: React.React
     <QuilttProvider token={session.token}>
       {children}
       <br />
-      {profileId && (
-        <div>
-          <p>Connected Profile ID: {profileId}</p>
-          <p>Connection ID: {connectionId || "N/A"}</p>
-
-          <button onClick={() => transactionsQuery.refetch()}>
-            {transactionsQuery.isFetching ? "Fetching Transactions..." : "Fetch Transactions"}
-          </button>
-          {transactionsQuery.data && (
-            <pre>{JSON.stringify(transactionsQuery.data, null, 2)}</pre>
-          )}
-
-          <br />
-
-          <button onClick={() => accountsQuery.refetch()}>
-            {accountsQuery.isFetching ? "Fetching Accounts..." : "Fetch Accounts"}
-          </button>
-          {accountsQuery.data && (
-            <pre>{JSON.stringify(accountsQuery.data, null, 2)}</pre>
-          )}
-        </div>
-      )}
     </QuilttProvider>
   );
 }

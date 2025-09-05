@@ -1,4 +1,4 @@
-import { loginUtil, logoutUtil, signupUtil } from '@/services/auth';
+import { loginUtil, logoutUtil, signupUtil, verifyUtil } from '@/services/auth';
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 interface User {
@@ -33,7 +33,8 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // useEffect(() => {
   //   // Check for existing session on app load
@@ -43,6 +44,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   //   }
   //   setLoading(false);
   // }, []);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await verifyUtil();
+        console.log("Verified User:", response);
+        setUser(response);
+      } catch (err) {
+        console.error("Verification failed", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
 
   const signup = async (name: string, email: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {

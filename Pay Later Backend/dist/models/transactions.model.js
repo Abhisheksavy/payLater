@@ -1,17 +1,13 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
-const transactionSchema = new Schema({
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    accountId: { type: String, required: true },
-    transactionId: { type: String, required: true, unique: true },
-    name: { type: String, required: true },
-    merchantName: { type: String },
-    category: [{ type: String }],
+import { Schema, model, Document } from "mongoose";
+const TransactionSchema = new Schema({
+    userId: { type: String, required: true },
+    transactionId: { type: String, required: true },
+    date: { type: Date, required: true },
     amount: { type: Number, required: true },
-    isoCurrencyCode: { type: String, required: true },
-    date: { type: String, required: true },
-    pending: { type: Boolean, default: false },
-    plaidData: { type: Schema.Types.Mixed },
-}, { timestamps: true });
-const Transaction = mongoose.model("Transaction", transactionSchema);
-export default Transaction;
+    description: { type: String, required: true },
+    merchant: { type: String, default: null },
+    accountId: { type: String, required: true },
+    status: { type: String, required: true },
+});
+export const Transaction = model("Transaction", TransactionSchema);
 //# sourceMappingURL=transactions.model.js.map

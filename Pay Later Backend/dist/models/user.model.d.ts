@@ -1,11 +1,13 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
 export interface IUser extends Document {
     _id: Types.ObjectId;
     name: string;
     email: string;
     password: string;
+    quilttUserId: string;
+    rewardPoints: number;
+    cashback: number;
     createdAt: Date;
-    plaidAccessToken?: Schema.Types.Mixed;
 }
 declare const User: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser, {}, {}> & IUser & Required<{
     _id: Types.ObjectId;
