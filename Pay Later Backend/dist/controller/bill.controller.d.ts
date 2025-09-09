@@ -13,5 +13,6 @@ export declare class RecurringBillController {
     private addFrequency;
     getUpcoming: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
     payBill: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+    verifyBillPayment(req: AuthRequest, res: Response): Promise<Response>;
 }
 //# sourceMappingURL=bill.controller.d.ts.map

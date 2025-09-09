@@ -10,5 +10,9 @@ router.post("/login", userController.login);
 router.get("/logout", authCheck, userController.logout);
 // Route : /api/user/verify -> Checks if user is logged in or not
 router.get("/verify", authCheck, userController.verify);
+// Route : /api/user/getDashboardSummary -> Route for Dashboard Data
+router.get("/dashboardSummary", authCheck, userController.getDashboardSummary);
+// Route : /api/user/updateConnectionDetails -> Route for storing connection details once bank is linked with project
+router.post("/updateConnectionDetails", authCheck, userController.updateConnectionDetails);
 export default router;
 //# sourceMappingURL=user.routes.js.map

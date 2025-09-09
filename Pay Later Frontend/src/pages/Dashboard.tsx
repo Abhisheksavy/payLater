@@ -32,7 +32,7 @@ import { toast } from "@/hooks/use-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
-
+ 
 interface Bill {
   id: string;
   name: string;
@@ -51,28 +51,22 @@ const Dashboard = () => {
   const [monthlyPoints, setMonthlyPoints] = useState(0);
   const [cashBack, setCashBack] = useState(0);
 
+    const dashboardSummaryQuery = useQuery({
+    queryKey: ["dashboardSummary"],
+    queryFn: async () => {
+      const { data } = await api.get("/user/dashboardSummary");
+      return data;
+    },
+  });
+  
   useEffect(() => {
-    if (user) {
-      // Load bills
-      const savedBills = localStorage.getItem(`bills_${user.id}`);
-      if (savedBills) {
-        setBills(JSON.parse(savedBills));
-      }
-
-      // Load points
-      const savedPoints = localStorage.getItem(`points_${user.id}`);
-      if (savedPoints) {
-        const points = parseInt(savedPoints, 10);
-        setTotalPoints(points);
-        setCashBack(points * 0.01);
-      }
-
-      // Calculate monthly points (simplified calculation)
-      const currentMonth = new Date().getMonth();
-      const monthlyEarnings = Math.floor(Math.random() * 500) + 100;
-      setMonthlyPoints(monthlyEarnings);
+    if (dashboardSummaryQuery.data) {
+      const { totalPoints, cashBack, monthlyPoints } = dashboardSummaryQuery.data;
+      setTotalPoints(totalPoints);
+      setCashBack(cashBack);
+      setMonthlyPoints(monthlyPoints);
     }
-  }, [user]);
+  }, [dashboardSummaryQuery.data]);
 
   const getTierInfo = (points: number) => {
     if (points >= 10000) return { tier: "Platinum", progress: 100, nextTier: null, pointsNeeded: 0 };
@@ -85,7 +79,6 @@ const Dashboard = () => {
   const upcomingBills = bills.filter(bill => bill.status === 'pending').slice(0, 3);
   const recentActivity = bills.filter(bill => bill.status === 'paid').slice(0, 3);
 
-  // Additional dashboard data
   const categorySpending = bills.reduce((acc, bill) => {
     if (bill.status === 'paid') {
       acc[bill.category] = (acc[bill.category] || 0) + bill.amount;
@@ -139,11 +132,12 @@ const Dashboard = () => {
 
   const memberSince = user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'Recently';
   const navigate = useNavigate();
+  
   // tailored logic for URL PARSING & Fetching
   const [profileId, setProfileId] = useState<string | null>(null);
   const [connectionId, setConnectionId] = useState<string | null>(null);
   const location = useLocation();
-
+  
   useQuery({
     queryKey: ["parseUrlParams", location.search],
     queryFn: async () => {
@@ -152,6 +146,10 @@ const Dashboard = () => {
       const urlConnectionId = params.get("connectionId");
       if (urlProfileId) {
         console.log("Parsed from URL:", { profileId: urlProfileId, connectionId: urlConnectionId });
+        await api.post("/user/updateConnectionDetails", {
+          profileId: urlProfileId,
+          connectionId: urlConnectionId,
+        });
         setProfileId(urlProfileId);
         setConnectionId(urlConnectionId);
       }
@@ -338,8 +336,8 @@ const Dashboard = () => {
                 <CreditCard className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{bills.filter(b => b.status === 'pending').length}</div>
-                <p className="text-xs text-muted-foreground">{bills.length} total bills</p>
+                <div className="text-2xl font-bold">{dashboardSummaryQuery.data?.activeBills ?? bills.filter(b => b.status === 'pending').length}</div>
+                <p className="text-xs text-muted-foreground">{dashboardSummaryQuery.data?.totalBills ?? bills.length} total bills</p>
               </CardContent>
             </Card>
 

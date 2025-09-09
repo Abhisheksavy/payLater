@@ -2,6 +2,9 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { signAccessToken } from "../utils/jwt.js";
 import { v4 as uuidv4 } from "uuid";
+import { ObjectId } from 'mongodb';
+import { PendingBill } from "../models/pendingBill.model.js";
+import Reward from "../models/rewards.model.js";
 class UserController {
     async register(req, res) {
         try {
@@ -11,7 +14,7 @@ class UserController {
                 return res.status(400).json({ message: "User already exists" });
             }
             const hashedPassword = await bcrypt.hash(password, 10);
-            const user = await User.create({ name, email, password: hashedPassword, quilttUserId: uuidv4() });
+            const user = await User.create({ name, email, password: hashedPassword, quilttExternalId: uuidv4() });
             const token = signAccessToken({ id: user._id.toString(), email: user.email });
             res.cookie("token", token, {
                 httpOnly: true,
@@ -79,6 +82,74 @@ class UserController {
             });
         }
         catch (err) {
+            return res.status(500).json({ message: "Server error" });
+        }
+    }
+    async getDashboardSummary(req, res) {
+        try {
+            const userId = req.userId;
+            const mongo_userId = new ObjectId(userId);
+            const user = await User.findById(mongo_userId);
+            if (!user)
+                return res.status(404).json({ message: "User not found" });
+            const bills = await PendingBill.find({ userId: mongo_userId });
+            const activeBills = bills.filter((b) => b.status === "pending").length;
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+            const monthlyRewards = await Reward.aggregate([
+                {
+                    $match: {
+                        userId: mongo_userId,
+                        createdAt: { $gte: startOfMonth },
+                    },
+                },
+                {
+                    $group: { _id: null, total: { $sum: "$amount" } },
+                },
+            ]);
+            const monthlyPoints = monthlyRewards.length > 0 ? monthlyRewards[0].total : 0;
+            return res.json({
+                totalPoints: user.rewardPoints,
+                cashBack: user.cashback,
+                activeBills,
+                totalBills: bills.length,
+                monthlyPoints,
+            });
+        }
+        catch (err) {
+            console.error("Dashboard summary error:", err);
+            return res.status(500).json({ message: "Server error" });
+        }
+    }
+    async updateConnectionDetails(req, res) {
+        try {
+            const { profileId, connectionId } = req.body;
+            const mongoUserId = req.userId;
+            if (!profileId) {
+                return res.status(400).json({ message: "profileId is required" });
+            }
+            const user = await User.findById(mongoUserId);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            user.quilttPid = profileId;
+            if (connectionId) {
+                if (!user.quilttConnections)
+                    user.quilttConnections = [];
+                if (!user.quilttConnections.includes(connectionId)) {
+                    user.quilttConnections.push(connectionId);
+                }
+            }
+            await user.save();
+            return res.json({
+                message: "Connection details updated successfully",
+                quilttPid: user.quilttPid,
+                quilttConnections: user.quilttConnections,
+            });
+        }
+        catch (err) {
+            console.error("updateConnectionDetails error:", err);
             return res.status(500).json({ message: "Server error" });
         }
     }

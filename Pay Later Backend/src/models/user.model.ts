@@ -5,7 +5,13 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  quilttUserId: string;
+
+  quilttExternalId?: string;
+  quilttPid?: string;
+  quilttUserUuid?: string;
+
+  quilttConnections?: string[];
+
   rewardPoints: number;
   cashback: number;
   createdAt: Date;
@@ -16,7 +22,13 @@ const userSchema = new Schema<IUser>(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    quilttUserId: { type: String, unique: true, sparse: true },
+
+    quilttExternalId: { type: String, unique: true, sparse: true },
+    quilttPid: { type: String, unique: true, sparse: true },
+    quilttUserUuid: { type: String, unique: true, sparse: true },
+
+    quilttConnections: [{ type: String }],
+
     rewardPoints: { type: Number, required: true, default: 0 },
     cashback: { type: Number, required: true, default: 0 },
   },

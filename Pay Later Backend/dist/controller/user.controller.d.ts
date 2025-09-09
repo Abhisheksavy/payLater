@@ -7,6 +7,8 @@ declare class UserController {
     login(req: Request, res: Response): Promise<Response>;
     logout(req: Request, res: Response): Promise<void>;
     verify(req: AuthRequest, res: Response): Promise<Response>;
+    getDashboardSummary(req: AuthRequest, res: Response): Promise<Response>;
+    updateConnectionDetails(req: AuthRequest, res: Response): Promise<Response>;
 }
 export declare const userController: UserController;
 export {};

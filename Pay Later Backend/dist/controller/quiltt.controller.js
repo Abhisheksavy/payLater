@@ -1,11 +1,14 @@
 import { Transaction } from "../models/transactions.model.js";
 import User from "../models/user.model.js";
-import { v4 as uuidv4 } from "uuid";
 class QuilttController {
     async sessions(req, res) {
         const mongoUserId = req.userId;
         const user = await User.findById(mongoUserId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
         try {
+            const quilttUserIdToUse = user.quilttPid || user.quilttExternalId;
             const response = await fetch("https://auth.quiltt.io/v1/users/sessions", {
                 method: "POST",
                 headers: {
@@ -13,10 +16,15 @@ class QuilttController {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    userId: uuidv4(),
+                    userId: quilttUserIdToUse,
                 }),
             });
             const data = await response.json();
+            if (!user.quilttPid && data.userId && data.userUuid) {
+                user.quilttPid = data.userId;
+                user.quilttUserUuid = data.userUuid;
+                await user.save();
+            }
             return res.status(response.status).json(data);
         }
         catch (err) {
@@ -26,9 +34,12 @@ class QuilttController {
     }
     async transactions(req, res) {
         try {
-            const { profileId } = req.params;
             const userId = req.userId;
-            console.log(userId);
+            const user = await User.findById(userId);
+            if (!user || !user.quilttPid) {
+                return res.status(404).json({ message: "User or profile ID not found" });
+            }
+            const profileId = user?.quilttPid;
             const query = `
       query Transactions {
         transactions {
@@ -90,7 +101,12 @@ class QuilttController {
     }
     async accounts(req, res) {
         try {
-            const { profileId } = req.params;
+            const userId = req.userId;
+            const user = await User.findById(userId);
+            if (!user || !user.quilttPid) {
+                return res.status(404).json({ message: "User or profile ID not found" });
+            }
+            const profileId = user?.quilttPid;
             const query = `
         query Accounts {
           accounts {

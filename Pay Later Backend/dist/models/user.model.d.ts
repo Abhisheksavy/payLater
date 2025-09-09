@@ -4,7 +4,10 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password: string;
-    quilttUserId: string;
+    quilttExternalId?: string;
+    quilttPid?: string;
+    quilttUserUuid?: string;
+    quilttConnections?: string[];
     rewardPoints: number;
     cashback: number;
     createdAt: Date;
