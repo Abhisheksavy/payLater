@@ -40,7 +40,7 @@ const Header = () => {
             <>
               <Quiltt />
               <AddBillModal>
-                <Button variant="hero" size="sm" className="gap-2">
+                <Button variant="customBlue" size="sm" className="gap-2">
                   <Plus className="w-4 h-4" />
                   Add Bill
                 </Button>

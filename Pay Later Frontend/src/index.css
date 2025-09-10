@@ -1,31 +1,3 @@
-@font-face {
-  font-family: 'MyFont';
-  src: url('/src/assets/fonts/segoeuithisz.ttf') format('ttf');
-  font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Segoe';
-  src: url('/src/assets/fonts/segoeuithibd.ttf') format('ttf');
-  font-weight: 700;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Segoe';
-  src: url('/src/assets/fonts/segoeuithisi.ttf') format('ttf');
-  font-weight: 400;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: 'Segoe';
-  src: url('/src/assets/fonts/segoeuithibd.ttf') format('ttf');
-  font-weight: 600;
-  font-style: normal;
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,7 +19,7 @@
     --popover-foreground: 230 15% 15%;
 
     /* Primary - Everyday Bill Purple */
-    --primary: 250 75% 60%;
+    --primary: 240 100% 68%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 250 75% 70%;
     

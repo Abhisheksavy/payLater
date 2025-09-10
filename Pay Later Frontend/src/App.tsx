@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
-import PlaidButton from "./AppPlaidTesting";
 // import Quiltt from "./Quiltt";
 import Dashboard from "./pages/Dashboard";
 import Bills from "./pages/Bills";

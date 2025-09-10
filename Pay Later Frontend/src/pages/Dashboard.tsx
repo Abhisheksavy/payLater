@@ -8,10 +8,10 @@ import Header from "@/components/Header";
 import AddBillModal from "@/components/AddBillModal";
 import BillRemindersModal from "@/components/BillRemindersModal";
 import RedeemPointsModal from "@/components/RedeemPointsModal";
-import {
-  Trophy,
-  CreditCard,
-  DollarSign,
+import { 
+  Trophy, 
+  CreditCard, 
+  DollarSign, 
   Calendar,
   TrendingUp,
   Star,
@@ -29,10 +29,7 @@ import {
   Zap
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
- 
+
 interface Bill {
   id: string;
   name: string;
@@ -51,22 +48,28 @@ const Dashboard = () => {
   const [monthlyPoints, setMonthlyPoints] = useState(0);
   const [cashBack, setCashBack] = useState(0);
 
-    const dashboardSummaryQuery = useQuery({
-    queryKey: ["dashboardSummary"],
-    queryFn: async () => {
-      const { data } = await api.get("/user/dashboardSummary");
-      return data;
-    },
-  });
-  
   useEffect(() => {
-    if (dashboardSummaryQuery.data) {
-      const { totalPoints, cashBack, monthlyPoints } = dashboardSummaryQuery.data;
-      setTotalPoints(totalPoints);
-      setCashBack(cashBack);
-      setMonthlyPoints(monthlyPoints);
+    if (user) {
+      // Load bills
+      const savedBills = localStorage.getItem(`bills_${user.id}`);
+      if (savedBills) {
+        setBills(JSON.parse(savedBills));
+      }
+
+      // Load points
+      const savedPoints = localStorage.getItem(`points_${user.id}`);
+      if (savedPoints) {
+        const points = parseInt(savedPoints, 10);
+        setTotalPoints(points);
+        setCashBack(points * 0.01);
+      }
+
+      // Calculate monthly points (simplified calculation)
+      const currentMonth = new Date().getMonth();
+      const monthlyEarnings = Math.floor(Math.random() * 500) + 100;
+      setMonthlyPoints(monthlyEarnings);
     }
-  }, [dashboardSummaryQuery.data]);
+  }, [user]);
 
   const getTierInfo = (points: number) => {
     if (points >= 10000) return { tier: "Platinum", progress: 100, nextTier: null, pointsNeeded: 0 };
@@ -78,7 +81,8 @@ const Dashboard = () => {
   const tierInfo = getTierInfo(totalPoints);
   const upcomingBills = bills.filter(bill => bill.status === 'pending').slice(0, 3);
   const recentActivity = bills.filter(bill => bill.status === 'paid').slice(0, 3);
-
+  
+  // Additional dashboard data
   const categorySpending = bills.reduce((acc, bill) => {
     if (bill.status === 'paid') {
       acc[bill.category] = (acc[bill.category] || 0) + bill.amount;
@@ -91,7 +95,7 @@ const Dashboard = () => {
     // { id: 2, title: "On Time", description: "Paid 5 bills on time", earned: bills.filter(b => b.status === 'paid').length >= 5, icon: Clock },
     // { id: 3, title: "Point Collector", description: "Earned 1000+ points", earned: totalPoints >= 1000, icon: Trophy },
     // { id: 4, title: "Category Master", description: "Paid bills in 3+ categories", earned: Object.keys(categorySpending).length >= 3, icon: Target }
-    { id: 1, title: "First Payment", description: "Made your first bill payment", earned: true, icon: Zap },
+        { id: 1, title: "First Payment", description: "Made your first bill payment", earned: true, icon: Zap },
     { id: 2, title: "On Time", description: "Paid 5 bills on time", earned: true, icon: Clock },
     { id: 3, title: "Point Collector", description: "Earned 1000+ points", earned: true, icon: Trophy },
     { id: 4, title: "Category Master", description: "Paid bills in 3+ categories", earned: true, icon: Target }
@@ -113,17 +117,17 @@ const Dashboard = () => {
         setTotalPoints(newPoints);
         setCashBack(newPoints * 0.01);
         localStorage.setItem(`points_${user?.id}`, newPoints.toString());
-
+        
         toast({
           title: "Bill Paid!",
           description: `You earned ${bill.rewards} points!`,
         });
-
+        
         return { ...bill, status: 'paid' as const };
       }
       return bill;
     });
-
+    
     setBills(updatedBills);
     if (user) {
       localStorage.setItem(`bills_${user.id}`, JSON.stringify(updatedBills));
@@ -131,179 +135,18 @@ const Dashboard = () => {
   };
 
   const memberSince = user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'Recently';
-  const navigate = useNavigate();
-  
-  // tailored logic for URL PARSING & Fetching
-  const [profileId, setProfileId] = useState<string | null>(null);
-  const [connectionId, setConnectionId] = useState<string | null>(null);
-  const location = useLocation();
-  
-  useQuery({
-    queryKey: ["parseUrlParams", location.search],
-    queryFn: async () => {
-      const params = new URLSearchParams(location.search);
-      const urlProfileId = params.get("profileId");
-      const urlConnectionId = params.get("connectionId");
-      if (urlProfileId) {
-        console.log("Parsed from URL:", { profileId: urlProfileId, connectionId: urlConnectionId });
-        await api.post("/user/updateConnectionDetails", {
-          profileId: urlProfileId,
-          connectionId: urlConnectionId,
-        });
-        setProfileId(urlProfileId);
-        setConnectionId(urlConnectionId);
-      }
-      return { urlProfileId, urlConnectionId };
-    },
-  });
-
-  const { data: session, error, isLoading } = useQuery({
-    queryKey: ["quilttSession"],
-    queryFn: async () => {
-      const { data } = await api.post("/quiltt/sessions");
-      return data;
-    },
-    retry: 1
-  });
-
-  const transactionsQuery = useQuery({
-    queryKey: ["transactions", profileId],
-    queryFn: async () => {
-      if (!profileId) return [];
-      const { data } = await api.get(`/quiltt/transactions/${profileId}`);
-      return data;
-    },
-    enabled: !!profileId,
-  });
-
-  const accountsQuery = useQuery({
-    queryKey: ["accounts", profileId],
-    queryFn: async () => {
-      if (!profileId) return [];
-      const { data } = await api.get(`/quiltt/accounts/${profileId}`);
-      return data;
-    },
-    enabled: !!profileId,
-  });
-
-  const billsQuery = useQuery({
-    queryKey: ["bills"],
-    queryFn: async () => {
-      const { data } = await api.get(`/bill`);
-      console.log("bills", data);
-      return data;
-    },
-    enabled: !!profileId,
-  });
-
-  const detectBills = useMutation({
-    mutationFn: async () => {
-      const { data } = await api.post(`/bill/detect`);
-      console.log(data)
-      return data;
-    },
-    onSuccess: () => {
-      billsQuery.refetch();
-    },
-  });
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="py-8">
         <div className="container mx-auto px-4">
-
           {/* Welcome Section */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
               Welcome back, {user?.name}!
             </h1>
             <p className="text-muted-foreground">Member since {memberSince}</p>
-            {/* Logic for fetching */}
-            {profileId && (
-              <div>
-                <p>Connected Profile ID: {profileId}</p>
-                <p>Connection ID: {connectionId || "N/A"}</p>
-
-                <button onClick={() => transactionsQuery.refetch()}>
-                  {transactionsQuery.isFetching ? "Fetching Transactions..." : "Fetch Transactions"}
-                </button>
-                {transactionsQuery.data && (
-                  <pre>{JSON.stringify(transactionsQuery.data, null, 2)}</pre>
-                )}
-
-                <br />
-
-                <button onClick={() => accountsQuery.refetch()}>
-                  {accountsQuery.isFetching ? "Fetching Accounts..." : "Fetch Accounts"}
-                </button>
-                {accountsQuery.data && (
-                  <pre>{JSON.stringify(accountsQuery.data, null, 2)}</pre>
-                )}
-
-                {/* Bills */}
-                <button
-                  onClick={async () => {
-                    const res = await billsQuery.refetch();
-                    console.log("Bills response:", res.data);
-                  }}
-                >
-                  {billsQuery.isFetching ? "Fetching Bills..." : "Fetch Bills"}
-                </button>
-
-                <br />
-
-                {/* Detect Bills */}
-                <button
-                  onClick={() =>
-                    detectBills.mutate(undefined, {
-                      onSuccess: (data) => {
-                        console.log("Detect Bills response:", data);
-                      },
-                    })
-                  }
-                >
-                  {detectBills.isPending ? "Detecting Bills..." : "Detect Bills"}
-                </button>
-                <br></br>
-                {/* Bills by Frequency */}
-                <button onClick={() => api.get(`/bill/frequency/monthly`).then(r => console.log("monthly bills", r.data))}>
-                  Fetch Monthly Bills
-                </button>
-                <br></br>
-                <button onClick={() => api.get(`/bill/frequency/weekly`).then(r => console.log("weekly bills", r.data))}>
-                  Fetch Weekly Bills
-                </button>
-                <br></br>
-                <button onClick={() => api.get(`/bill/frequency/biweekly`).then(r => console.log("biweekly bills", r.data))}>
-                  Fetch Biweekly Bills
-                </button>
-                <br></br>
-                <button onClick={() => api.get(`/bill/frequency/irregular`).then(r => console.log("irregular bills", r.data))}>
-                  Fetch Irregular Bills
-                </button>
-
-                <br />
-
-                {/* Bills by Recurring Flag */}
-                <button onClick={() => api.get(`/bill/recurring/true`).then(r => console.log("recurring bills", r.data))}>
-                  Fetch Recurring Bills
-                </button>
-                <br></br>
-                <button onClick={() => api.get(`/bill/recurring/false`).then(r => console.log("non-recurring bills", r.data))}>
-                  Fetch Non-Recurring Bills
-                </button>
-                <br></br>
-                <button onClick={() => api.get(`/bill/generateUpcoming`).then(r => console.log("upcoming bills", r.data))}>
-                  Fetch upcoming bills
-                </button>
-                <br></br>
-
-                <br></br>
-
-
-              </div>
-            )}
           </div>
 
           {/* Key Metrics */}
@@ -336,8 +179,8 @@ const Dashboard = () => {
                 <CreditCard className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{dashboardSummaryQuery.data?.activeBills ?? bills.filter(b => b.status === 'pending').length}</div>
-                <p className="text-xs text-muted-foreground">{dashboardSummaryQuery.data?.totalBills ?? bills.length} total bills</p>
+                <div className="text-2xl font-bold">{bills.filter(b => b.status === 'pending').length}</div>
+                <p className="text-xs text-muted-foreground">{bills.length} total bills</p>
               </CardContent>
             </Card>
 
@@ -408,8 +251,8 @@ const Dashboard = () => {
                               <span className="font-medium">${amount.toFixed(2)}</span>
                             </div>
                             <div className="w-full bg-muted rounded-full h-2">
-                              <div
-                                className="bg-primary h-2 rounded-full transition-all duration-300"
+                              <div 
+                                className="bg-primary h-2 rounded-full transition-all duration-300" 
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
@@ -446,8 +289,8 @@ const Dashboard = () => {
                           <div className="text-right">
                             <p className="font-medium">${bill.amount}</p>
                             <p className="text-sm text-primary">+{bill.rewards} points</p>
-                            <Button
-                              size="sm"
+                            <Button 
+                              size="sm" 
                               onClick={() => handlePayBill(bill.id)}
                               className="mt-2"
                             >
@@ -485,22 +328,26 @@ const Dashboard = () => {
                     {achievements.map((achievement) => {
                       const Icon = achievement.icon;
                       return (
-                        <div
-                          key={achievement.id}
-                          className={`p-4 rounded-lg border ${achievement.earned
-                              ? 'bg-primary/5 border-primary/20'
+                        <div 
+                          key={achievement.id} 
+                          className={`p-4 rounded-lg border ${
+                            achievement.earned 
+                              ? 'bg-primary/5 border-primary/20' 
                               : 'bg-muted/50 border-muted'
-                            }`}
+                          }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-full ${achievement.earned ? 'bg-primary/10' : 'bg-muted'
-                              }`}>
-                              <Icon className={`w-4 h-4 ${achievement.earned ? 'text-primary' : 'text-muted-foreground'
-                                }`} />
+                            <div className={`p-2 rounded-full ${
+                              achievement.earned ? 'bg-primary/10' : 'bg-muted'
+                            }`}>
+                              <Icon className={`w-4 h-4 ${
+                                achievement.earned ? 'text-primary' : 'text-muted-foreground'
+                              }`} />
                             </div>
                             <div>
-                              <h4 className={`font-medium ${achievement.earned ? 'text-foreground' : 'text-muted-foreground'
-                                }`}>
+                              <h4 className={`font-medium ${
+                                achievement.earned ? 'text-foreground' : 'text-muted-foreground'
+                              }`}>
                                 {achievement.title}
                               </h4>
                               <p className="text-xs text-muted-foreground">
@@ -530,19 +377,15 @@ const Dashboard = () => {
                       Redeem Points
                     </Button>
                   </RedeemPointsModal>
-
+                  
                   <BillRemindersModal>
                     <Button className="w-full" variant="outline">
                       <AlertCircle className="w-4 h-4 mr-2" />
                       Set Reminders
                     </Button>
                   </BillRemindersModal>
-
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => navigate("/bills")}
-                  >
+                  
+                  <Button className="w-full" variant="outline">
                     <Eye className="w-4 h-4 mr-2" />
                     View Activity
                   </Button>
@@ -598,15 +441,15 @@ const Dashboard = () => {
                       {upcomingDueDates.map((bill) => {
                         const dueDate = new Date(bill.dueDate);
                         const isUrgent = dueDate.getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000; // 3 days
-
+                        
                         return (
                           <div key={bill.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                             <div>
                               <p className="font-medium text-sm">{bill.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {dueDate.toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric'
+                                {dueDate.toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric' 
                                 })}
                               </p>
                             </div>

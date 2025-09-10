@@ -8,16 +8,20 @@ class QuilttController {
             return res.status(404).json({ message: "User not found" });
         }
         try {
-            const quilttUserIdToUse = user.quilttPid || user.quilttExternalId;
+            let body;
+            if (user.quilttPid) {
+                body = { userId: user.quilttPid };
+            }
+            else {
+                body = { email: user.email };
+            }
             const response = await fetch("https://auth.quiltt.io/v1/users/sessions", {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${process.env.QUILTT_API_SECRET}`,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    userId: quilttUserIdToUse,
-                }),
+                body: JSON.stringify(body),
             });
             const data = await response.json();
             if (!user.quilttPid && data.userId && data.userUuid) {
@@ -34,12 +38,8 @@ class QuilttController {
     }
     async transactions(req, res) {
         try {
+            const { profileId } = req.params;
             const userId = req.userId;
-            const user = await User.findById(userId);
-            if (!user || !user.quilttPid) {
-                return res.status(404).json({ message: "User or profile ID not found" });
-            }
-            const profileId = user?.quilttPid;
             const query = `
       query Transactions {
         transactions {
@@ -101,12 +101,7 @@ class QuilttController {
     }
     async accounts(req, res) {
         try {
-            const userId = req.userId;
-            const user = await User.findById(userId);
-            if (!user || !user.quilttPid) {
-                return res.status(404).json({ message: "User or profile ID not found" });
-            }
-            const profileId = user?.quilttPid;
+            const { profileId } = req.params;
             const query = `
         query Accounts {
           accounts {

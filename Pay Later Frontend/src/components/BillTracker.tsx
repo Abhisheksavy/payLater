@@ -102,7 +102,7 @@ const BillTracker = () => {
             <p className="text-muted-foreground">Track and pay your bills to earn rewards</p>
           </div>
           <AddBillModal onBillAdded={handleBillAdded}>
-            <Button variant="hero">Add New Bill</Button>
+            <Button variant="customBlue">Add New Bill</Button>
           </AddBillModal>
         </div>
 
@@ -115,7 +115,7 @@ const BillTracker = () => {
               <h3 className="text-lg font-semibold mb-2">No bills yet</h3>
               <p className="text-muted-foreground mb-4">Add your first bill to start earning rewards!</p>
               <AddBillModal onBillAdded={handleBillAdded}>
-                <Button variant="hero">Add Your First Bill</Button>
+                <Button variant="customBlue">Add Your First Bill</Button>
               </AddBillModal>
             </div>
           ) : (

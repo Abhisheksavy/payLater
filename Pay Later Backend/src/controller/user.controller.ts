@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ObjectId } from 'mongodb';
 import { PendingBill } from "../models/pendingBill.model.js";
 import Reward from "../models/rewards.model.js";
+import { Transaction } from "../models/transactions.model.js";
 
 interface AuthRequest extends Request {
     userId?: string;
@@ -24,7 +25,7 @@ class UserController {
 
             const hashedPassword = await bcrypt.hash(password, 10);
 
-            const user = await User.create({ name, email, password: hashedPassword, quilttExternalId: uuidv4() });
+            const user = await User.create({ name, email, password: hashedPassword });
 
             const token = signAccessToken({ id: user._id.toString(), email: user.email });
 
@@ -146,8 +147,121 @@ class UserController {
   }
     }
 
-    public async updateConnectionDetails(req: AuthRequest, res: Response) : Promise<Response> {
-    try {
+private async syncTransactions(userId: string, profileId: string) {
+  const query = `
+    query Transactions {
+      transactions {
+        edges {
+          node {
+            id
+            date
+            amount
+            description
+            status
+            merchant {
+              name
+            }
+            account {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const basicAuth = Buffer.from(
+    `${profileId}:${process.env.QUILTT_API_SECRET}`
+  ).toString("base64");
+
+  const response = await fetch("https://api.quiltt.io/v1/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  const { data } = await response.json();
+
+  if (!data || !data.transactions) {
+    return { message: "No transactions found", count: 0 };
+  }
+
+  const transactions = data.transactions.edges.map((edge: any) => ({
+    transactionId: edge.node.id,
+    userId,
+    date: edge.node.date,
+    amount: edge.node.amount,
+    description: edge.node.description,
+    status: edge.node.status,
+    merchant: edge.node.merchant?.name || null,
+    accountId: edge.node.account.id,
+    accountName: edge.node.account.name,
+  }));
+
+  for (const txn of transactions) {
+    await Transaction.findOneAndUpdate(
+      { transactionId: txn.transactionId },
+      txn,
+      { upsert: true, new: true }
+    );
+  }
+
+  return { message: "Transactions synced", count: transactions.length };
+}
+
+private async syncAccounts(profileId: string) {
+  const query = `
+    query Accounts {
+      accounts {
+        id
+        name
+        mask
+        type
+        balance {
+          available
+          current
+        }
+      }
+    }
+  `;
+
+  const basicAuth = Buffer.from(
+    `${profileId}:${process.env.QUILTT_API_SECRET}`
+  ).toString("base64");
+
+  const response = await fetch("https://api.quiltt.io/v1/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  const { data } = await response.json();
+
+  if (!data || !data.accounts) {
+    return { message: "No accounts found", count: 0 };
+  }
+
+  // (Optional) save accounts in DB
+  // for (const acc of data.accounts) {
+  //   await Account.findOneAndUpdate(
+  //     { accountId: acc.id },
+  //     { ...acc, profileId },
+  //     { upsert: true, new: true }
+  //   );
+  // }
+
+  return { message: "Accounts synced", count: data.accounts.length, accounts: data.accounts };
+}
+
+public async updateConnectionDetails(req: AuthRequest, res: Response): Promise<Response> {
+  try {
     const { profileId, connectionId } = req.body;
     const mongoUserId = req.userId;
 
@@ -171,16 +285,22 @@ class UserController {
 
     await user.save();
 
+    const transactionsResult = await this.syncTransactions(mongoUserId!, profileId);
+    const accountsResult = await this.syncAccounts(profileId);
+
     return res.json({
       message: "Connection details updated successfully",
       quilttPid: user.quilttPid,
       quilttConnections: user.quilttConnections,
+      transactions: transactionsResult,
+      accounts: accountsResult,
     });
   } catch (err) {
     console.error("updateConnectionDetails error:", err);
     return res.status(500).json({ message: "Server error" });
   }
-    }
+}
+
     
 }
 

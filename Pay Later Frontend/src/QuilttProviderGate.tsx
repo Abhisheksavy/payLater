@@ -24,14 +24,16 @@ export default function QuilttProviderGate({ children }: { children: React.React
     },
   });
 
-  const { data: session, error, isLoading } = useQuery({
-    queryKey: ["quilttSession"],
-    queryFn: async () => {
-      const { data } = await api.post("/quiltt/sessions");
-      return data;
-    },
-    retry: 1
-  });
+const { data: session, error, isLoading } = useQuery({
+  queryKey: ["quilttSession"],
+  queryFn: async () => {
+    const response = await api.post("/quiltt/sessions");
+    console.log("Full response from /quiltt/sessions:", response);
+    console.log("Extracted data:", response.data);
+    return response.data;
+  },
+  retry: 1
+});
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions", profileId],
@@ -73,6 +75,7 @@ export default function QuilttProviderGate({ children }: { children: React.React
       billsQuery.refetch();
     },
   });
+  
   if (isLoading) return <p>Loading Quiltt...</p>;
   if (error) return <p>Failed to initialize Quiltt session</p>;
   if (!session?.token) return <p>No session token available</p>;

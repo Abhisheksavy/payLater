@@ -18,7 +18,7 @@ const Bills = () => {
               <h1 className="text-3xl font-bold mb-2">Bills</h1>
               <p className="text-muted-foreground">Manage all your bills and payments</p>
             </div>
-            <Button variant="hero" className="gap-2">
+            <Button variant="customBlue" className="gap-2">
               <Plus className="w-4 h-4" />
               Add New Bill
             </Button>

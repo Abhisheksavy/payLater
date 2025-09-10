@@ -17,7 +17,13 @@ public async sessions(req: AuthRequest, res: Response): Promise<Response> {
   }
 
   try {
-    const quilttUserIdToUse = user.quilttPid || user.quilttExternalId;
+    let body: Record<string, string>;
+
+    if (user.quilttPid) {
+      body = { userId: user.quilttPid };
+    } else {
+      body = { email: user.email };
+    }
 
     const response = await fetch("https://auth.quiltt.io/v1/users/sessions", {
       method: "POST",
@@ -25,9 +31,7 @@ public async sessions(req: AuthRequest, res: Response): Promise<Response> {
         Authorization: `Bearer ${process.env.QUILTT_API_SECRET}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        userId: quilttUserIdToUse,
-      }),
+      body: JSON.stringify(body),
     });
 
     const data = await response.json();
@@ -44,7 +48,6 @@ public async sessions(req: AuthRequest, res: Response): Promise<Response> {
     return res.status(500).json({ message: "Server error" });
   }
 }
-
 
   public async transactions(req: AuthRequest, res: Response): Promise<Response> {
     try {

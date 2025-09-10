@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Gift, Star, Trophy, Target, Calendar, Smartphone } from "lucide-react";
+import RewardsDashboardOverview from "@/components/RewardsDashboardOverView";
 
 const Rewards = () => {
   const achievements = [
@@ -61,14 +62,13 @@ const Rewards = () => {
       <main className="py-8">
         <div className="container mx-auto px-4">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Rewards</h1>
-            <p className="text-muted-foreground">Track your progress and claim rewards</p>
+            <h1 className="text-4xl font-bold mb-2">Rewards</h1>
+            <p className="text-muted-foreground font-normal text-base leading-6 align-middle">Track your progress and claim rewards</p>
           </div>
 
-          <RewardsOverview />
+          <RewardsDashboardOverview />
 
-          {/* Rewards Tier */}
-          <section className="mb-12">
+          <section className="my-12">
             <h2 className="text-2xl font-bold mb-6">Your Rewards Tier</h2>
             <Card className="bg-gradient-to-r from-primary/5 to-primary-glow/5 border-primary/20">
               <CardHeader>
@@ -97,11 +97,11 @@ const Rewards = () => {
               {achievements.map((achievement) => {
                 const IconComponent = achievement.icon;
                 return (
-                  <Card key={achievement.id} className={`transition-all duration-300 ${achievement.completed ? 'border-success/20 bg-success/5' : 'hover:shadow-soft'}`}>
+                  <Card key={achievement.id} className={`transition-all duration-300 hover:shadow-soft border-primary`}>
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className={`p-2 rounded-lg ${achievement.completed ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}`}>
+                          <div className={`p-2 rounded-lg ${achievement.completed ? 'bg-primary text-success-foreground' : 'bg-muted text-muted-foreground'}`}>
                             <IconComponent className="w-5 h-5" />
                           </div>
                           <div>
@@ -110,7 +110,7 @@ const Rewards = () => {
                           </div>
                         </div>
                         {achievement.completed ? (
-                          <Badge className="bg-success text-success-foreground">Completed</Badge>
+                          <Badge className="bg-primary text-success-foreground">Completed</Badge>
                         ) : (
                           <Badge variant="outline">{achievement.progress}%</Badge>
                         )}
@@ -124,7 +124,7 @@ const Rewards = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-primary font-bold">+{achievement.points} points</span>
                         {achievement.completed ? (
-                          <Button size="sm" disabled className="bg-success text-success-foreground">
+                          <Button size="sm" disabled className="bg-primary text-success-foreground">
                             ✓ Claimed
                           </Button>
                         ) : (
@@ -161,22 +161,27 @@ const Rewards = () => {
                 </CardContent>
               </Card>
 
-              <Card className="group hover:shadow-soft transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-primary" />
-                    Set Goals
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Set savings goals and track your progress
-                </p>
-                <SetGoalsModal>
-                  <Button variant="outline" className="w-full">Create Goal</Button>
-                </SetGoalsModal>
-                </CardContent>
-              </Card>
+<Card className="group hover:shadow-soft transition-all duration-300 flex flex-col">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <Target className="w-5 h-5 text-primary" />
+      Set Goals
+    </CardTitle>
+  </CardHeader>
+  <CardContent className="flex flex-col flex-1">
+    <p className="text-sm text-muted-foreground mb-4">
+      Set savings goals and track your progress
+    </p>
+    <div className="mt-auto">
+      <SetGoalsModal>
+        <Button variant="outline" className="w-full">
+          Create Goal
+        </Button>
+      </SetGoalsModal>
+    </div>
+  </CardContent>
+</Card>
+
 
               <Card className="group hover:shadow-soft transition-all duration-300">
                 <CardHeader>
