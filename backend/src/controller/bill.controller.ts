@@ -407,10 +407,19 @@ public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Respons
     // Use buffer directly, no fs.readFileSync
     const dataBuffer = file.buffer;
 
-    // Upload to Vercel Blob
-    const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
-      access: "public",
-    });
+const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+if (!blobToken) {
+  throw new Error("Missing BLOB_READ_WRITE_TOKEN in environment");
+}
+
+const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
+  access: "public",
+  token: blobToken, // now it's definitely a string
+  addRandomSuffix: true, // or allowOverwrite: true
+});
+
+
+
     console.log("Uploaded PDF URL:", url);
 
     // Read PDF content from buffer
