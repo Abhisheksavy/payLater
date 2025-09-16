@@ -14,7 +14,8 @@ router.post("/login", userController.login)
 router.post("/logout", authCheck, userController.logout)
 
 // Route : /api/user/verify -> Checks if user is logged in or not
-router.get("/verify", authCheck, userController.verify)
+router.get("/logout", authCheck, userController.logout);
+router.post("/logout", authCheck, userController.logout);
 
 // Route : /api/user/getDashboardSummary -> Route for Dashboard Data
 router.get("/dashboardSummary", authCheck, userController.getDashboardSummary)
