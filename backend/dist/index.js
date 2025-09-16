@@ -14,6 +14,9 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api", router);
+app.get("/api/test", (req, res) => {
+    res.json({ message: "Backend is working!" });
+});
 async function start() {
     await connectDB();
     app.listen(PORT, () => {
