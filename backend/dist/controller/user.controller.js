@@ -20,7 +20,7 @@ class UserController {
             res.cookie("token", token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
+                sameSite: "none",
                 maxAge: 24 * 60 * 60 * 1000,
             });
             return res.json({ id: user._id, name, email, createdAt: user.createdAt });
@@ -44,7 +44,7 @@ class UserController {
             res.cookie("token", token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
+                sameSite: "none",
                 maxAge: 24 * 60 * 60 * 1000,
             });
             return res.json({ id: user._id, name: user.name, email, createdAt: user.createdAt });
