@@ -414,8 +414,8 @@ if (!blobToken) {
 
 const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
   access: "public",
-  token: blobToken, // now it's definitely a string
-  addRandomSuffix: true, // or allowOverwrite: true
+  token: blobToken,
+  addRandomSuffix: true,
 });
 
 
