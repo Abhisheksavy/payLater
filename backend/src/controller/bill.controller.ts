@@ -284,38 +284,146 @@ public payBill = async (req: AuthRequest, res: Response) => {
 };
 
 
+// public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Response> {
+//   try {
+//     const userId = req.userId;
+//     const file = req.file;
+//     if (!file) {
+//       return res.status(400).json({ message: "PDF file is required" });
+//     }
+
+//     // const dataBuffer = fs.readFileSync(file.path); commented for vercel deployment , works in localhost
+//     // Read the PDF file
+// const dataBuffer = fs.readFileSync(file.path);
+
+// // Upload to Vercel Blob
+// const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
+//   access: 'public'
+// });
+
+// // url now contains the public URL of the uploaded PDF
+// console.log("Uploaded PDF URL:", url);
+
+//     const pdfData = await pdf(dataBuffer);
+//     const pdfText = pdfData.text;
+
+//     const txnIdMatch = pdfText.match(/Transaction\s*ID[:\s]*(txn_[A-Za-z0-9]+)/i);
+
+//     let txn = null;
+
+//     if (txnIdMatch) {
+//       const transactionId = txnIdMatch[1];
+//       txn = await Transaction.findOne({ transactionId, userId });
+//     }
+//     else {
+//       return res.status(404).json({
+//         message: "Unable to fetch txn history from uploaded pdf",
+//       });
+//     }
+
+//     if (!txn) {
+//       return res.status(404).json({
+//         message: "No matching record found in Linked Bank Account Payment History",
+//       });
+//     }
+
+//     const billTypeMap: Record<string, string> = {
+//       "rent|mortgage": "Rent/Mortgage",
+//       "electric|water|gas|internet|phone|telecom": "Utilities",
+//       "netflix|spotify|prime|disney|hotstar|gym|club|itunes|apple|google play|apple music": "Subscription",
+//       "insurance|premium|policy": "Insurance",
+//       "loan|credit card|emi|payment": "Loan",
+//       "maintenance|school|fees": "Other Fees",
+//     };
+
+//     function classifyBill(text: string): string {
+//       for (const pattern in billTypeMap) {
+//         const regex = new RegExp(pattern, "i");
+//         if (regex.test(text)) return billTypeMap[pattern]!;
+//       }
+//       return "Other";
+//     }
+
+//     const combinedText = `${txn.merchant || ""} ${txn.description || ""}`;
+//     const billType = classifyBill(combinedText);
+    
+//     const relatedBill = await Bill.findOne({ userId, merchant: txn.merchant });
+
+//     // console.log("Bill Recurring:", relatedBill?.recurring);
+
+//     const percentBack = rewardConfig[relatedBill?.billType || "Other"] || 0;
+//     const rewardBase = Math.abs(txn.amount) * percentBack;
+//     const rewardPoints = Math.round(rewardBase * rewardMultiplier);
+//     const cashbackAmount = Math.abs(txn.amount) * 0.01;
+
+//     const updatedUser = await User.findByIdAndUpdate(
+//       userId,
+//       {
+//         $inc: {
+//           rewardPoints: rewardPoints,
+//           cashback: Math.abs(txn.amount) * 0.01,
+//         },
+//       },
+//       { new: true }
+//     );
+//     await Reward.create({
+//       userId,
+//       transactionHistoryId: txn._id,
+//       type: "coins",
+//       amount: rewardPoints,
+//       cashback: cashbackAmount,
+//       description: `Reward for paying ${txn.merchant}`,
+//     });
+//     await TransactionHistory.create({
+//       userId,
+//       billId: txn._id,
+//       merchant: txn.merchant,
+//       description: txn.description,
+//       amount: txn.amount,
+//       paidDate: new Date(),
+//     });
+//     return res.json({
+//       message: "Bill verified and reward credited",
+//       billType,
+//       rewardEarned: rewardPoints,
+//       totalPoints: updatedUser?.rewardPoints,
+//       cashbackBalance: updatedUser?.cashback,
+//       cashbackAmount
+//     });
+//   } catch (err) {
+//     console.error("Verify bill payment error:", err);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// }
 public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Response> {
   try {
     const userId = req.userId;
     const file = req.file;
+
     if (!file) {
       return res.status(400).json({ message: "PDF file is required" });
     }
 
-    // const dataBuffer = fs.readFileSync(file.path); commented for vercel deployment , works in localhost
-    // Read the PDF file
-const dataBuffer = fs.readFileSync(file.path);
+    // Use buffer directly, no fs.readFileSync
+    const dataBuffer = file.buffer;
 
-// Upload to Vercel Blob
-const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
-  access: 'public'
-});
+    // Upload to Vercel Blob
+    const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
+      access: "public",
+    });
+    console.log("Uploaded PDF URL:", url);
 
-// url now contains the public URL of the uploaded PDF
-console.log("Uploaded PDF URL:", url);
-
+    // Read PDF content from buffer
     const pdfData = await pdf(dataBuffer);
     const pdfText = pdfData.text;
 
     const txnIdMatch = pdfText.match(/Transaction\s*ID[:\s]*(txn_[A-Za-z0-9]+)/i);
 
     let txn = null;
-
     if (txnIdMatch) {
       const transactionId = txnIdMatch[1];
       txn = await Transaction.findOne({ transactionId, userId });
-    }
-    else {
+    } else {
       return res.status(404).json({
         message: "Unable to fetch txn history from uploaded pdf",
       });
@@ -346,10 +454,8 @@ console.log("Uploaded PDF URL:", url);
 
     const combinedText = `${txn.merchant || ""} ${txn.description || ""}`;
     const billType = classifyBill(combinedText);
-    
-    const relatedBill = await Bill.findOne({ userId, merchant: txn.merchant });
 
-    // console.log("Bill Recurring:", relatedBill?.recurring);
+    const relatedBill = await Bill.findOne({ userId, merchant: txn.merchant });
 
     const percentBack = rewardConfig[relatedBill?.billType || "Other"] || 0;
     const rewardBase = Math.abs(txn.amount) * percentBack;
@@ -360,12 +466,13 @@ console.log("Uploaded PDF URL:", url);
       userId,
       {
         $inc: {
-          rewardPoints: rewardPoints,
-          cashback: Math.abs(txn.amount) * 0.01,
+          rewardPoints,
+          cashback: cashbackAmount,
         },
       },
       { new: true }
     );
+
     await Reward.create({
       userId,
       transactionHistoryId: txn._id,
@@ -374,6 +481,7 @@ console.log("Uploaded PDF URL:", url);
       cashback: cashbackAmount,
       description: `Reward for paying ${txn.merchant}`,
     });
+
     await TransactionHistory.create({
       userId,
       billId: txn._id,
@@ -381,20 +489,23 @@ console.log("Uploaded PDF URL:", url);
       description: txn.description,
       amount: txn.amount,
       paidDate: new Date(),
+      fileUrl: url, // save uploaded PDF URL
     });
+
     return res.json({
       message: "Bill verified and reward credited",
       billType,
       rewardEarned: rewardPoints,
       totalPoints: updatedUser?.rewardPoints,
       cashbackBalance: updatedUser?.cashback,
-      cashbackAmount
+      cashbackAmount,
+      uploadedFileUrl: url
     });
+
   } catch (err) {
     console.error("Verify bill payment error:", err);
     return res.status(500).json({ message: "Server error" });
   }
 }
-
 
 }
