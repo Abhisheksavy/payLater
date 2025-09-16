@@ -1,5 +1,6 @@
 import { Transaction } from "../models/transactions.model.js";
 import User from "../models/user.model.js";
+import { v4 as uuidv4 } from 'uuid';
 class QuilttController {
     async sessions(req, res) {
         const mongoUserId = req.userId;
@@ -10,7 +11,7 @@ class QuilttController {
         try {
             let body;
             if (user.quilttPid) {
-                body = { userId: user.quilttPid };
+                body = { userId: uuidv4() };
             }
             else {
                 body = { email: user.email };

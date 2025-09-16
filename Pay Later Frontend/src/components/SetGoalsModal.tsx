@@ -194,7 +194,7 @@ const SetGoalsModal = ({ children }: SetGoalsModalProps) => {
                   </Select>
                 </div>
 
-                <Button onClick={handleCreateGoal} className="w-full" variant="hero">
+                <Button onClick={handleCreateGoal} className="w-full" variant="customBlue">
                   Create Goal
                 </Button>
               </CardContent>

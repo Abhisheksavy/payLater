@@ -11,7 +11,7 @@ export function LinkBankButton() {
         console.error("Connection error", error);
       }}
     >
-      Connect Bank Account
+      Link Bank
     </QuilttButton>
   );
 }

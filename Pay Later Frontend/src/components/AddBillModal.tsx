@@ -341,7 +341,7 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
 
           {/* Actions */}
           <div className="flex gap-3">
-            <Button type="submit" variant="hero" className="flex-1">
+            <Button type="submit" variant="customBlue" className="flex-1">
               Add Bill & Earn {estimatedPoints} Points
             </Button>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

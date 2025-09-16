@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { Transaction } from "../models/transactions.model.js";
 import User from "../models/user.model.js";
+import { v4 as uuidv4 } from 'uuid';  
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -20,7 +21,7 @@ public async sessions(req: AuthRequest, res: Response): Promise<Response> {
     let body: Record<string, string>;
 
     if (user.quilttPid) {
-      body = { userId: user.quilttPid };
+      body = { userId: uuidv4() };
     } else {
       body = { email: user.email };
     }

@@ -234,7 +234,7 @@ const BillRemindersModal = ({ children }: BillRemindersModalProps) => {
                   <Label htmlFor="reminder-enabled">Enable reminder</Label>
                 </div>
 
-                <Button onClick={handleCreateReminder} className="w-full" variant="hero">
+                <Button onClick={handleCreateReminder} className="w-full" variant="customBlue">
                   Create Reminder
                 </Button>
               </CardContent>
