@@ -412,10 +412,10 @@ if (!blobToken) {
   throw new Error("Missing BLOB_READ_WRITE_TOKEN in environment");
 }
 
-const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
+const uniqueKey = `bills/${Date.now()}-${file.originalname}`;
+const { url } = await put(uniqueKey, dataBuffer, {
   access: "public",
   token: blobToken,
-  addRandomSuffix: true,
 });
 
 
