@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/Abhisheksavy/pay-later-backend#readme",
   "dependencies": {
+    "@vercel/blob": "^2.0.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",

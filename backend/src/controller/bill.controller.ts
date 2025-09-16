@@ -9,6 +9,9 @@ import User from "../models/user.model.js";
 import Reward from "../models/rewards.model.js";
 import fs from "fs";
 import pdf from "pdf-parse-new";
+import { put } from "@vercel/blob";
+
+const { url } = await put('articles/blob.txt', 'Hello World!', { access: 'public' });
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -289,7 +292,18 @@ public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Respons
       return res.status(400).json({ message: "PDF file is required" });
     }
 
-    const dataBuffer = fs.readFileSync(file.path);
+    // const dataBuffer = fs.readFileSync(file.path); commented for vercel deployment , works in localhost
+    // Read the PDF file
+const dataBuffer = fs.readFileSync(file.path);
+
+// Upload to Vercel Blob
+const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
+  access: 'public'
+});
+
+// url now contains the public URL of the uploaded PDF
+console.log("Uploaded PDF URL:", url);
+
     const pdfData = await pdf(dataBuffer);
     const pdfText = pdfData.text;
 
