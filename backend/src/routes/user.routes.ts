@@ -11,7 +11,7 @@ router.post("/register", userController.register)
 router.post("/login", userController.login)
 
 // Route : /api/user/logout -> Clears cookie
-router.get("/logout", authCheck, userController.logout)
+router.post("/logout", authCheck, userController.logout)
 
 // Route : /api/user/verify -> Checks if user is logged in or not
 router.get("/verify", authCheck, userController.verify)
