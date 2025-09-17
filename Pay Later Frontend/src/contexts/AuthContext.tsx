@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signup = async (name: string, email: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
       const newUser: User = await signupUtil(name, email, password);
-      setUser(newUser);
+      // setUser(newUser);
       return { success: true, message: 'Account created successfully!' };
     } catch (error) {
       return { success: false, message: 'Failed to create account' };

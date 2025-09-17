@@ -12,6 +12,11 @@ export interface IUser extends Document {
 
   quilttConnections?: string[];
 
+  quilttAccounts?: {
+    id: string;
+    name: string;
+  }[];
+
   rewardPoints: number;
   cashback: number;
   createdAt: Date;
@@ -28,6 +33,13 @@ const userSchema = new Schema<IUser>(
     quilttUserUuid: { type: String, unique: true, sparse: true },
 
     quilttConnections: [{ type: String }],
+
+    quilttAccounts: [
+      {
+        id: { type: String, required: true },
+        name: { type: String, required: true },
+      },
+    ],
 
     rewardPoints: { type: Number, required: true, default: 0 },
     cashback: { type: Number, required: true, default: 0 },

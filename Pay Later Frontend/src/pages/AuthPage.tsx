@@ -13,9 +13,10 @@ import Logo from '../assets/Logo.svg';
 const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
   const { login, signup } = useAuth();
   const { toast } = useToast();
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -34,7 +35,7 @@ const navigate = useNavigate();
     setIsLoading(true);
 
     const result = await login(loginForm.email, loginForm.password);
-    
+
     toast({
       title: result.success ? 'Welcome back!' : 'Login failed',
       description: result.message,
@@ -44,13 +45,13 @@ const navigate = useNavigate();
     setIsLoading(false);
 
     if (result.success) {
-    navigate('/dashboard');
-  }
+      navigate('/dashboard');
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (signupForm.password !== signupForm.confirmPassword) {
       toast({
         title: 'Password mismatch',
@@ -81,9 +82,18 @@ const navigate = useNavigate();
 
     setIsLoading(false);
 
+    console.log("here 7", result.success)
     if (result.success) {
-    navigate('/dashboard');
-  }
+      setActiveTab('login');
+      console.log("here 8")
+      setSignupForm({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+      });
+    }
+
   };
 
   return (
@@ -98,12 +108,12 @@ const navigate = useNavigate();
         </div>
 
         <Card className="shadow-glow border-primary/10">
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
               <CardHeader>
                 <CardTitle>Sign in to your account</CardTitle>
@@ -125,7 +135,7 @@ const navigate = useNavigate();
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Password</Label>
                     <div className="relative">
@@ -195,7 +205,7 @@ const navigate = useNavigate();
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
                     <div className="relative">
@@ -237,7 +247,7 @@ const navigate = useNavigate();
                     </div>
                   </div>
 
-                  <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
+                  <Button type="submit" variant="customBlue" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Creating account...' : 'Create Account'}
                   </Button>
                 </form>

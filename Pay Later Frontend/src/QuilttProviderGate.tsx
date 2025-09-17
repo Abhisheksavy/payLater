@@ -8,7 +8,9 @@ export default function QuilttProviderGate({ children }: { children: React.React
   const [profileId, setProfileId] = useState<string | null>(null);
   const [connectionId, setConnectionId] = useState<string | null>(null);
   const location = useLocation();
-
+  const SESSION_KEY = "quilttSession";
+  const SESSION_TTL = 1000 * 60 * 50;
+  
   useQuery({
     queryKey: ["parseUrlParams", location.search],
     queryFn: async () => {
@@ -24,16 +26,37 @@ export default function QuilttProviderGate({ children }: { children: React.React
     },
   });
 
-const { data: session, error, isLoading } = useQuery({
-  queryKey: ["quilttSession"],
-  queryFn: async () => {
-    const response = await api.post("/quiltt/sessions");
-    console.log("Full response from /quiltt/sessions:", response);
-    console.log("Extracted data:", response.data);
-    return response.data;
-  },
-  retry: 1
-});
+  const { data: session, error, isLoading } = useQuery({
+    queryKey: ["quilttSession"],
+    queryFn: async () => {
+      // 1. Try localStorage
+      const cached = localStorage.getItem(SESSION_KEY);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.expiry > Date.now()) {
+            console.log("Reusing cached Quiltt session:", parsed);
+            return parsed.data;
+          }
+        } catch (e) {
+          console.warn("Failed to parse cached session", e);
+        }
+      }
+
+      // 2. Otherwise fetch new session from backend
+      const response = await api.post("/quiltt/sessions");
+      console.log("Fetched new Quiltt session:", response.data);
+
+      const toStore = {
+        data: response.data,
+        expiry: Date.now() + SESSION_TTL,
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(toStore));
+
+      return response.data;
+    },
+    retry: 1,
+  });
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions", profileId],

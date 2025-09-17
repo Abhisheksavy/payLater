@@ -21,6 +21,8 @@ import MobileRewards from "./pages/mobile/MobileRewards";
 import MobilePayments from "./pages/mobile/MobilePayments";
 import MobileProfile from "./pages/mobile/MobileProfile";
 import Quiltt from "./Quiltt";
+import Loading from "./pages/Loading";
+import QuilttProviderGate from "./QuilttProviderGate";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +33,7 @@ const AppContent = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<AuthPage />} />
-    <Route path="/quiltt" element={<Quiltt />} />
+      <Route path="/quiltt" element={<Quiltt />} />
       <Route path="/dashboard" element={
         <ProtectedRoute>
           {isMobile ? <MobileDashboard /> : <Dashboard />}
@@ -58,6 +60,7 @@ const AppContent = () => {
         </ProtectedRoute>
       } />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/loading" element={<Loading />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
@@ -66,13 +69,15 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-  <TooltipProvider>
-    <Toaster />
-    <Sonner />
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
-  </TooltipProvider>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <QuilttProviderGate>
+          <AppContent />
+        </QuilttProviderGate>
+      </BrowserRouter>
+    </TooltipProvider>
   </QueryClientProvider>
 );
 

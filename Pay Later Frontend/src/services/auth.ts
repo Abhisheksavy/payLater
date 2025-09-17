@@ -16,5 +16,6 @@ export async function logoutUtil() {
 
 export async function verifyUtil() {
   const res = await api.get("/user/verify");
+  console.log(res)
   return res.data;
 }

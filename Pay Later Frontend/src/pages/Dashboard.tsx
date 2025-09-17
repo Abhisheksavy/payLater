@@ -95,7 +95,7 @@ const Dashboard = () => {
     // { id: 2, title: "On Time", description: "Paid 5 bills on time", earned: bills.filter(b => b.status === 'paid').length >= 5, icon: Clock },
     // { id: 3, title: "Point Collector", description: "Earned 1000+ points", earned: totalPoints >= 1000, icon: Trophy },
     // { id: 4, title: "Category Master", description: "Paid bills in 3+ categories", earned: Object.keys(categorySpending).length >= 3, icon: Target }
-        { id: 1, title: "First Payment", description: "Made your first bill payment", earned: true, icon: Zap },
+    { id: 1, title: "First Payment", description: "Made your first bill payment", earned: true, icon: Zap },
     { id: 2, title: "On Time", description: "Paid 5 bills on time", earned: true, icon: Clock },
     { id: 3, title: "Point Collector", description: "Earned 1000+ points", earned: true, icon: Trophy },
     { id: 4, title: "Category Master", description: "Paid bills in 3+ categories", earned: true, icon: Target }

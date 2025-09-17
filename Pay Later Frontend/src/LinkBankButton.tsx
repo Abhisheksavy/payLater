@@ -3,7 +3,7 @@ import { QuilttButton } from "@quiltt/react";
 export function LinkBankButton() {
   return (
     <QuilttButton
-      connectorId="hfv9ei25q2"
+      connectorId="c2frh6zji7"
       onExitSuccess={(payload) => {
         console.log("Bank connected!", payload);
       }}

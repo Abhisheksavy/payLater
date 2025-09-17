@@ -32,10 +32,10 @@ class UserController {
       const isProd = process.env.NODE_ENV === "production";
 
       res.cookie("token", token, {
-        httpOnly: true,                       
-        secure: isProd,                       
-        sameSite: isProd ? "none" : "lax",    
-        maxAge: 24 * 60 * 60 * 1000,          
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
       return res.json({ id: user._id, name, email, createdAt: user.createdAt });
@@ -265,7 +265,7 @@ class UserController {
     return { message: "Accounts synced", count: data.accounts.length, accounts: data.accounts };
   }
 
-  public async updateConnectionDetails(req: AuthRequest, res: Response): Promise<Response> {
+  updateConnectionDetails = async (req: AuthRequest, res: Response) => {
     try {
       const { profileId, connectionId } = req.body;
       const mongoUserId = req.userId;
@@ -288,24 +288,30 @@ class UserController {
         }
       }
 
-      await user.save();
-
       const transactionsResult = await this.syncTransactions(mongoUserId!, profileId);
       const accountsResult = await this.syncAccounts(profileId);
+      const filteredAccounts = accountsResult.accounts?.map((acc: any) => ({
+        id: acc.id,
+        name: acc.name,
+      })) || [];
+
+      user.quilttAccounts = filteredAccounts;
+
+      await user.save();
 
       return res.json({
         message: "Connection details updated successfully",
         quilttPid: user.quilttPid,
         quilttConnections: user.quilttConnections,
+        quilttAccounts: user.quilttAccounts, // 👈 already filtered
         transactions: transactionsResult,
-        accounts: accountsResult,
+        accounts: accountsResult, // full accounts if frontend still needs all details
       });
     } catch (err) {
       console.error("updateConnectionDetails error:", err);
       return res.status(500).json({ message: "Server error" });
     }
-  }
-
+  };
 
 }
 
