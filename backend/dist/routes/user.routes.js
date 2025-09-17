@@ -7,9 +7,10 @@ router.post("/register", userController.register);
 // Route : /api/user/login -> Route for user login
 router.post("/login", userController.login);
 // Route : /api/user/logout -> Clears cookie
-router.get("/logout", authCheck, userController.logout);
+router.post("/logout", authCheck, userController.logout);
 // Route : /api/user/verify -> Checks if user is logged in or not
-router.get("/verify", authCheck, userController.verify);
+router.get("/logout", authCheck, userController.logout);
+router.post("/logout", authCheck, userController.logout);
 // Route : /api/user/getDashboardSummary -> Route for Dashboard Data
 router.get("/dashboardSummary", authCheck, userController.getDashboardSummary);
 // Route : /api/user/updateConnectionDetails -> Route for storing connection details once bank is linked with project

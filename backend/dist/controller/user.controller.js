@@ -17,10 +17,11 @@ class UserController {
             const hashedPassword = await bcrypt.hash(password, 10);
             const user = await User.create({ name, email, password: hashedPassword });
             const token = signAccessToken({ id: user._id.toString(), email: user.email });
+            const isProd = process.env.NODE_ENV === "production";
             res.cookie("token", token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "none",
+                secure: isProd,
+                sameSite: isProd ? "none" : "lax",
                 maxAge: 24 * 60 * 60 * 1000,
             });
             return res.json({ id: user._id, name, email, createdAt: user.createdAt });
@@ -41,10 +42,11 @@ class UserController {
                 return res.status(400).json({ message: "Invalid credentials" });
             }
             const token = signAccessToken({ id: user._id.toString(), email: user.email });
+            const isProd = process.env.NODE_ENV === "production";
             res.cookie("token", token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "none",
+                secure: isProd,
+                sameSite: isProd ? "none" : "lax",
                 maxAge: 24 * 60 * 60 * 1000,
             });
             return res.json({ id: user._id, name: user.name, email, createdAt: user.createdAt });

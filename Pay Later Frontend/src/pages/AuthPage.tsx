@@ -151,7 +151,7 @@ const navigate = useNavigate();
                     </div>
                   </div>
 
-                  <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
+                  <Button type="submit" variant="customBlue" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Signing in...' : 'Sign In'}
                   </Button>
                 </form>

@@ -8,6 +8,7 @@ export interface AuthRequest extends Request {
 export const authCheck = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const token = req.cookies?.token;
+    console.log(req.cookies);
     if (!token) return res.status(400).json({ message: "No token, authorization denied" });
 
     const decoded = verifyAccessToken<{ id: string }>(token);

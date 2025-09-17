@@ -4,6 +4,7 @@ import router from "./routes/api.routes.js";
 import connectDB from "./db/db.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import serverless from "serverless-http";
 
 dotenv.config();
 
@@ -34,4 +35,4 @@ async function start(){
 
 start()
 
-export default app;
+export const handler = serverless(app);
