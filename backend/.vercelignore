@@ -1,7 +1,6 @@
 node_modules
 dist
-*.js.map
-*.d.ts.map
 api/*.js
+api/*.js.map
 api/*.d.ts
-src
+api/*.d.ts.map
