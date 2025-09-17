@@ -1,1 +1,0 @@
-{"version":3,"file":"AuthCheck.d.ts","sourceRoot":"","sources":["../../src/middlewares/AuthCheck.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAG/D,MAAM,WAAW,WAAY,SAAQ,OAAO;IAC1C,MAAM,CAAC,EAAE,MAAM,CAAC;CACjB;AAED,eAAO,MAAM,SAAS,GAAI,KAAK,WAAW,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,mDAa5E,CAAC"}

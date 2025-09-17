@@ -3,3 +3,4 @@ node_modules
 
 # Skip .env
 .env
+dist
