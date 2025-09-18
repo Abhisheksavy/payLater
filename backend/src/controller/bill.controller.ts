@@ -554,13 +554,13 @@ const rewardPoints = amounts.length * 2;   // 2 points per txn
       { new: true }
     );
 
-    await Reward.create({
-      userId,
-      type: "coins",
-      amount: rewardPoints,
-      cashback: cashbackAmount,
-      description: `Reward for ${amounts.length} transactions`,
-    });
+    // await Reward.create({
+    //   userId,
+    //   type: "coins",
+    //   amount: rewardPoints,
+    //   cashback: cashbackAmount,
+    //   description: `Reward for ${amounts.length} transactions`,
+    // });
 
     return res.json({
       message: "Bill verified and reward credited",
