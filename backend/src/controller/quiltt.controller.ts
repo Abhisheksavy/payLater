@@ -41,12 +41,12 @@ class QuilttController {
       let quilttUserId: string;
 
       // Check if user already has a Quiltt external ID
-      if (user.quilttExternalId) {
-        quilttUserId = user.quilttExternalId;
+      if (user.quilttPid) {
+        quilttUserId = user.quilttPid;
       } else {
         // Generate a consistent UUID-based ID for Quiltt using MongoDB ID
         // This ensures the same user always gets the same Quiltt ID
-        quilttUserId = generateConsistentUUID(mongoUserId!);
+        quilttUserId = uuidv4();
         user.quilttExternalId = quilttUserId;
         await user.save();
       }
