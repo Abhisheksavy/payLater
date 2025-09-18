@@ -27,7 +27,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  return <>{children}</>;
+   return <QuilttProviderGate>{children}</QuilttProviderGate>;
 };
 
 export default ProtectedRoute;
