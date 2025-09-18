@@ -96,7 +96,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+      <QuilttProviderGate>
         <AppContent />
+      </QuilttProviderGate>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

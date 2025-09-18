@@ -53,14 +53,30 @@ interface Bill {
   rewards: number;
 }
 
+interface DashboardSummary {
+  totalPoints: number;
+  cashBack: number;
+  activeBills: number;
+  totalBills: number;
+  monthlyPoints: number;
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { refreshSession } = useQuilttSession();
   const [bills, setBills] = useState<Bill[]>([]);
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [monthlyPoints, setMonthlyPoints] = useState(0);
-  const [cashBack, setCashBack] = useState(0);
+
+  // Fetch dashboard summary from API
+  const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useQuery<DashboardSummary>({
+    queryKey: ["dashboardSummary"],
+    queryFn: async () => {
+      const { data } = await api.get("/user/dashboardSummary");
+      return data;
+    },
+    enabled: !!user,
+    refetchInterval: 60000, // Refetch every minute
+  });
 
   // Fetch connected banks from Quiltt
   const { data: connectionsData, isLoading: connectionsLoading } = useQuery({
@@ -109,26 +125,20 @@ const Dashboard = () => {
     },
   });
 
+  // Use dashboard data from API or fallback to defaults
+  const totalPoints = dashboardData?.totalPoints ?? 0;
+  const cashBack = dashboardData?.cashBack ?? 0;
+  const monthlyPoints = dashboardData?.monthlyPoints ?? 0;
+  const activeBills = dashboardData?.activeBills ?? 0;
+  const totalBills = dashboardData?.totalBills ?? 0;
+
   useEffect(() => {
     if (user) {
-      // Load bills
+      // Load bills from localStorage (you might want to move this to API as well)
       const savedBills = localStorage.getItem(`bills_${user.id}`);
       if (savedBills) {
         setBills(JSON.parse(savedBills));
       }
-
-      // Load points
-      const savedPoints = localStorage.getItem(`points_${user.id}`);
-      if (savedPoints) {
-        const points = parseInt(savedPoints, 10);
-        setTotalPoints(points);
-        setCashBack(points * 0.01);
-      }
-
-      // Calculate monthly points (simplified calculation)
-      const currentMonth = new Date().getMonth();
-      const monthlyEarnings = Math.floor(Math.random() * 500) + 100;
-      setMonthlyPoints(monthlyEarnings);
     }
   }, [user]);
 
@@ -179,36 +189,32 @@ const Dashboard = () => {
   }, {} as Record<string, number>);
 
   const achievements = [
-    // { id: 1, title: "First Payment", description: "Made your first bill payment", earned: bills.some(b => b.status === 'paid'), icon: Zap },
-    // { id: 2, title: "On Time", description: "Paid 5 bills on time", earned: bills.filter(b => b.status === 'paid').length >= 5, icon: Clock },
-    // { id: 3, title: "Point Collector", description: "Earned 1000+ points", earned: totalPoints >= 1000, icon: Trophy },
-    // { id: 4, title: "Category Master", description: "Paid bills in 3+ categories", earned: Object.keys(categorySpending).length >= 3, icon: Target }
     {
       id: 1,
       title: "First Payment",
       description: "Made your first bill payment",
-      earned: true,
+      earned: bills.some(b => b.status === 'paid') || totalPoints > 0,
       icon: Zap,
     },
     {
       id: 2,
       title: "On Time",
       description: "Paid 5 bills on time",
-      earned: true,
+      earned: bills.filter(b => b.status === 'paid').length >= 5 || totalPoints >= 100,
       icon: Clock,
     },
     {
       id: 3,
       title: "Point Collector",
       description: "Earned 1000+ points",
-      earned: true,
+      earned: totalPoints >= 1000,
       icon: Trophy,
     },
     {
       id: 4,
       title: "Category Master",
       description: "Paid bills in 3+ categories",
-      earned: true,
+      earned: Object.keys(categorySpending).length >= 3 || totalPoints >= 500,
       icon: Target,
     },
   ];
@@ -224,28 +230,31 @@ const Dashboard = () => {
     )
     .slice(0, 5);
 
-  const handlePayBill = (billId: string) => {
-    const updatedBills = bills.map((bill) => {
-      if (bill.id === billId) {
-        const newPoints = totalPoints + bill.rewards;
-        setTotalPoints(newPoints);
-        setCashBack(newPoints * 0.01);
-        localStorage.setItem(`points_${user?.id}`, newPoints.toString());
+  const handlePayBill = async (billId: string) => {
+    const bill = bills.find(b => b.id === billId);
+    if (!bill) return;
 
-        toast({
-          title: "Bill Paid!",
-          description: `You earned ${bill.rewards} points!`,
-        });
-
-        return { ...bill, status: "paid" as const };
+    const updatedBills = bills.map((b) => {
+      if (b.id === billId) {
+        return { ...b, status: "paid" as const };
       }
-      return bill;
+      return b;
     });
 
     setBills(updatedBills);
     if (user) {
       localStorage.setItem(`bills_${user.id}`, JSON.stringify(updatedBills));
     }
+
+    // Invalidate dashboard summary to refresh points data
+    queryClient.invalidateQueries({
+      queryKey: ["dashboardSummary"]
+    });
+
+    toast({
+      title: "Bill Paid!",
+      description: `You earned ${bill.rewards} points!`,
+    });
   };
 
   const memberSince = user?.createdAt
@@ -254,6 +263,48 @@ const Dashboard = () => {
         month: "long",
       })
     : "Recently";
+
+  // Show loading state
+  if (dashboardLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="py-8">
+          <div className="container mx-auto px-4">
+            <div className="text-center py-8">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <div className="w-4 h-4 bg-primary-foreground rounded"></div>
+              </div>
+              <p className="text-muted-foreground">Loading dashboard...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (dashboardError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="py-8">
+          <div className="container mx-auto px-4">
+            <div className="text-center py-8">
+              <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">Failed to load dashboard data</p>
+              <Button 
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboardSummary"] })}
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -308,11 +359,9 @@ const Dashboard = () => {
                 <CreditCard className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {bills.filter((b) => b.status === "pending").length}
-                </div>
+                <div className="text-2xl font-bold">{activeBills}</div>
                 <p className="text-xs text-muted-foreground">
-                  {bills.length} total bills
+                  {totalBills} total bills
                 </p>
               </CardContent>
             </Card>
