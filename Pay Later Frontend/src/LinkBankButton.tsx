@@ -8,7 +8,7 @@ interface LinkBankButtonProps {
 export function LinkBankButton({ onSuccess, onError }: LinkBankButtonProps) {
   return (
     <QuilttButton
-      connectorId="c2frh6zji7"
+      connectorId="iixxbk53ec"
       onExitSuccess={(payload) => {
         console.log("Bank connected!", payload);
         onSuccess?.(payload);

@@ -78,10 +78,21 @@ const Dashboard = () => {
       const { data } = await api.delete(`/quiltt/connections/${connectionId}`);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       // Refresh session to get a fresh token after disconnection
       refreshSession();
-      queryClient.invalidateQueries({ queryKey: ["userConnections"] });
+
+      // Add a small delay to ensure session refresh completes, then force refetch
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: ["userConnections"],
+          refetchType: 'all'
+        });
+        queryClient.refetchQueries({
+          queryKey: ["userConnections"]
+        });
+      }, 500);
+
       toast({
         title: "Bank Disconnected",
         description: "Your bank connection has been removed successfully.",

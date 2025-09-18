@@ -30,7 +30,18 @@ export default function Quiltt() {
     },
     onSuccess: () => {
       refreshSession();
-      queryClient.invalidateQueries({ queryKey: ["userConnections"] });
+
+      // Add a small delay to ensure session refresh completes, then force refetch
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: ["userConnections"],
+          refetchType: 'all'
+        });
+        queryClient.refetchQueries({
+          queryKey: ["userConnections"]
+        });
+      }, 500);
+
       toast({
         title: "Bank Unlinked",
         description: "Your bank connection has been removed successfully.",
