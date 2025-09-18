@@ -77,10 +77,11 @@ class UserController {
 
   public async logout(req: Request, res: Response): Promise<void> {
     try {
+      const isProd = process.env.NODE_ENV === "production";
       res.clearCookie("token", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
       });
       res.json({ message: "Logged out successfully" });
     } catch (err) {
