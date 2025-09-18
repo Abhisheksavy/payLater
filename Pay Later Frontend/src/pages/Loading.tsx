@@ -2,11 +2,13 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Loading = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
+  const { isAuthenticated, user } = useAuth();
+  
 const { data, isSuccess } = useQuery({
   queryKey: ["parseUrlParams", location.search],
   queryFn: async () => {
@@ -18,6 +20,7 @@ const { data, isSuccess } = useQuery({
       await api.post("/user/updateConnectionDetails", {
         profileId,
         connectionId,
+        userId: user.id,
       });
     }
 

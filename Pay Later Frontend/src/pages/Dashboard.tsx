@@ -71,7 +71,9 @@ const Dashboard = () => {
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useQuery<DashboardSummary>({
     queryKey: ["dashboardSummary"],
     queryFn: async () => {
-      const { data } = await api.get("/user/dashboardSummary");
+      const { data } = await api.post("/user/dashboardSummary", {
+      userId: user.id,
+    });
       return data;
     },
     enabled: !!user,

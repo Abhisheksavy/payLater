@@ -14,7 +14,9 @@ export async function logoutUtil() {
   await api.post("/user/logout");
 }
 
-export async function verifyUtil() {
-  const res = await api.get("/user/verify");
+export async function verifyUtil(user) {
+  const res = await api.post("/user/verify", {
+      userId: user.id,
+    });
   return res.data;
 }

@@ -17,12 +17,12 @@ router.post("/logout", authCheck, userController.logout)
 router.get("/account", authCheck, userController.getUserAccounts)
 
 // Route : /api/user/getDashboardSummary -> Route for Dashboard Data
-router.get("/dashboardSummary", authCheck, userController.getDashboardSummary)
+router.post("/dashboardSummary", authCheck, userController.getDashboardSummary)
 
 // Route : /api/user/updateConnectionDetails -> Route for storing connection details once bank is linked with project
 router.post("/updateConnectionDetails", authCheck, userController.updateConnectionDetails)
 
 // Route : /api/user/verify -> Checks if user is logged in or not
-router.get("/verify", authCheck, userController.verify);
+router.post("/verify", authCheck, userController.verify);
 
 export default router;

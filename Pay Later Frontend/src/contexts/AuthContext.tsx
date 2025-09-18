@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await verifyUtil();
+        const response = await verifyUtil(user);
         console.log("Verified User:", response);
         setUser(response);
       } catch (err) {
