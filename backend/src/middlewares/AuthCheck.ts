@@ -12,16 +12,11 @@ export const authCheck = (
 ) => {
   try {
     const token = req.cookies?.token;
-    if (token) {
-      const decoded = verifyAccessToken<{ id: string }>(token);
-      req.userId = decoded.id;
-      return next();
-    } else if (req.body?.userId) {
-      req.userId = req.body.userId;
-      return next();
-    } else {
-      return res.status(404).json({ message: "No token or userId provided" });
-    }
+    console.log("req.body?.userId", req.body?.userId);
+    const decoded = verifyAccessToken<{ id: string }>(token);
+    req.userId = decoded.id || req.body?.userId;
+
+    next();
   } catch (err) {
     return res.status(400).json({ message: "Token is not valid" });
   }
