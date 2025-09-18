@@ -103,7 +103,11 @@ export default function QuilttProviderGate({
       localStorage.removeItem(SESSION_KEY);
 
       // 3. Fetch new session from backend
-      const response = await api.post("/quiltt/sessions");
+      console.log("user",user)
+      const response = await api.post("/quiltt/sessions", {
+      userId: user.id,
+    });
+      
       console.log("Fetched new Quiltt session:", response.data);
 
       const toStore = {
