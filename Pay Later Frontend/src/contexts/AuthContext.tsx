@@ -51,11 +51,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await verifyUtil(user);
-        console.log("Verified User:", response);
-        setUser(response);
+        // Check if there's a stored session/token before verifying
+        // Only call verifyUtil if we have some indication of an existing session
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          const response = await verifyUtil(parsedUser);
+          console.log("Verified User:", response);
+          setUser(response);
+        }
       } catch (err) {
         console.error("Verification failed", err);
+        // Clear any stored user data if verification fails
+        localStorage.removeItem('user');
       } finally {
         setLoading(false);
       }
@@ -85,6 +93,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const user: User = await loginUtil(email, password);
       setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
       return { success: true, message: "Logged in successfully!" };
     } catch (error) {
       return { success: false, message: "Failed to log in" };
@@ -94,6 +103,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async () => {
     await logoutUtil();
     setUser(null);
+    localStorage.removeItem('user');
   };
 
   const value = {
