@@ -38,7 +38,7 @@ class UserController {
         maxAge: 24 * 60 * 60 * 1000,
       });
 
-      return res.json({ id: user._id, name, email, createdAt: user.createdAt });
+      return res.json({ id: user._id, name, email, createdAt: user.createdAt, token });
     } catch (err) {
       return res.status(500).json({ message: "Server error" });
     }
@@ -69,7 +69,7 @@ class UserController {
       });
 
 
-      return res.json({ id: user._id, name: user.name, email, createdAt: user.createdAt });
+      return res.json({ id: user._id, name: user.name, email, createdAt: user.createdAt, token });
     } catch (err) {
       return res.status(500).json({ message: "Server error" });
     }

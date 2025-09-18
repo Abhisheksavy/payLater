@@ -64,6 +64,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.error("Verification failed", err);
         // Clear any stored user data if verification fails
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
       } finally {
         setLoading(false);
       }
@@ -91,9 +92,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     password: string
   ): Promise<{ success: boolean; message: string }> => {
     try {
-      const user: User = await loginUtil(email, password);
+      const response: User & { token?: string } = await loginUtil(email, password);
+      const { token, ...user } = response;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
+      if (token) {
+        localStorage.setItem('token', token);
+      }
       return { success: true, message: "Logged in successfully!" };
     } catch (error) {
       return { success: false, message: "Failed to log in" };
@@ -104,6 +109,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     await logoutUtil();
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
 
   const value = {
