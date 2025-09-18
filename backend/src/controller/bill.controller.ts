@@ -393,127 +393,188 @@ export class RecurringBillController {
   //     return res.status(500).json({ message: "Server error" });
   //   }
   // }
-  public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Response> {
-    try {
-      const userId = req.userId;
-      const file = req.file;
+  // public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Response> {
+  //   try {
+  //     const userId = req.userId;
+  //     const file = req.file;
 
-      if (!file) {
-        return res.status(400).json({ message: "PDF file is required" });
-      }
+  //     if (!file) {
+  //       return res.status(400).json({ message: "PDF file is required" });
+  //     }
 
-      // Use buffer directly, no fs.readFileSync
-      const dataBuffer = file.buffer;
+  //     // Use buffer directly, no fs.readFileSync
+  //     const dataBuffer = file.buffer;
 
-      const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-      if (!blobToken) {
-        throw new Error("Missing BLOB_READ_WRITE_TOKEN in environment");
-      }
+  //     const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+  //     if (!blobToken) {
+  //       throw new Error("Missing BLOB_READ_WRITE_TOKEN in environment");
+  //     }
 
-      const uniqueKey = `bills/${Date.now()}-${file.originalname}`;
-      const { url } = await put(uniqueKey, dataBuffer, {
-        access: "public",
-        token: blobToken,
+  //     const uniqueKey = `bills/${Date.now()}-${file.originalname}`;
+  //     const { url } = await put(uniqueKey, dataBuffer, {
+  //       access: "public",
+  //       token: blobToken,
 
-      });
+  //     });
 
 
 
-      console.log("Uploaded PDF URL:", url);
+  //     console.log("Uploaded PDF URL:", url);
 
-      // Read PDF content from buffer
-      const pdfData = await pdf(dataBuffer);
-      const pdfText = pdfData.text;
+  //     // Read PDF content from buffer
+  //     const pdfData = await pdf(dataBuffer);
+  //     const pdfText = pdfData.text;
 
-      const txnIdMatch = pdfText.match(/Transaction\s*ID[:\s]*(txn_[A-Za-z0-9]+)/i);
+  //     const txnIdMatch = pdfText.match(/Transaction\s*ID[:\s]*(txn_[A-Za-z0-9]+)/i);
 
-      let txn = null;
-      if (txnIdMatch) {
-        const transactionId = txnIdMatch[1];
-        txn = await Transaction.findOne({ transactionId, userId });
-      } else {
-        return res.status(404).json({
-          message: "Unable to fetch txn history from uploaded pdf",
-        });
-      }
+  //     let txn = null;
+  //     if (txnIdMatch) {
+  //       const transactionId = txnIdMatch[1];
+  //       txn = await Transaction.findOne({ transactionId, userId });
+  //     } else {
+  //       return res.status(404).json({
+  //         message: "Unable to fetch txn history from uploaded pdf",
+  //       });
+  //     }
 
-      if (!txn) {
-        return res.status(404).json({
-          message: "No matching record found in Linked Bank Account Payment History",
-        });
-      }
+  //     if (!txn) {
+  //       return res.status(404).json({
+  //         message: "No matching record found in Linked Bank Account Payment History",
+  //       });
+  //     }
 
-      const billTypeMap: Record<string, string> = {
-        "rent|mortgage": "Rent/Mortgage",
-        "electric|water|gas|internet|phone|telecom": "Utilities",
-        "netflix|spotify|prime|disney|hotstar|gym|club|itunes|apple|google play|apple music": "Subscription",
-        "insurance|premium|policy": "Insurance",
-        "loan|credit card|emi|payment": "Loan",
-        "maintenance|school|fees": "Other Fees",
-      };
+  //     const billTypeMap: Record<string, string> = {
+  //       "rent|mortgage": "Rent/Mortgage",
+  //       "electric|water|gas|internet|phone|telecom": "Utilities",
+  //       "netflix|spotify|prime|disney|hotstar|gym|club|itunes|apple|google play|apple music": "Subscription",
+  //       "insurance|premium|policy": "Insurance",
+  //       "loan|credit card|emi|payment": "Loan",
+  //       "maintenance|school|fees": "Other Fees",
+  //     };
 
-      function classifyBill(text: string): string {
-        for (const pattern in billTypeMap) {
-          const regex = new RegExp(pattern, "i");
-          if (regex.test(text)) return billTypeMap[pattern]!;
-        }
-        return "Other";
-      }
+  //     function classifyBill(text: string): string {
+  //       for (const pattern in billTypeMap) {
+  //         const regex = new RegExp(pattern, "i");
+  //         if (regex.test(text)) return billTypeMap[pattern]!;
+  //       }
+  //       return "Other";
+  //     }
 
-      const combinedText = `${txn.merchant || ""} ${txn.description || ""}`;
-      const billType = classifyBill(combinedText);
+  //     const combinedText = `${txn.merchant || ""} ${txn.description || ""}`;
+  //     const billType = classifyBill(combinedText);
 
-      const relatedBill = await Bill.findOne({ userId, merchant: txn.merchant });
+  //     const relatedBill = await Bill.findOne({ userId, merchant: txn.merchant });
 
-      const percentBack = rewardConfig[relatedBill?.billType || "Other"] || 0;
-      const rewardBase = Math.abs(txn.amount) * percentBack;
-      const rewardPoints = Math.round(rewardBase * rewardMultiplier);
-      const cashbackAmount = Math.abs(txn.amount) * 0.01;
+  //     const percentBack = rewardConfig[relatedBill?.billType || "Other"] || 0;
+  //     const rewardBase = Math.abs(txn.amount) * percentBack;
+  //     const rewardPoints = Math.round(rewardBase * rewardMultiplier);
+  //     const cashbackAmount = Math.abs(txn.amount) * 0.01;
 
-      const updatedUser = await User.findByIdAndUpdate(
-        userId,
-        {
-          $inc: {
-            rewardPoints,
-            cashback: cashbackAmount,
-          },
-        },
-        { new: true }
-      );
+  //     const updatedUser = await User.findByIdAndUpdate(
+  //       userId,
+  //       {
+  //         $inc: {
+  //           rewardPoints,
+  //           cashback: cashbackAmount,
+  //         },
+  //       },
+  //       { new: true }
+  //     );
 
-      await Reward.create({
-        userId,
-        transactionHistoryId: txn._id,
-        type: "coins",
-        amount: rewardPoints,
-        cashback: cashbackAmount,
-        description: `Reward for paying ${txn.merchant}`,
-      });
+  //     await Reward.create({
+  //       userId,
+  //       transactionHistoryId: txn._id,
+  //       type: "coins",
+  //       amount: rewardPoints,
+  //       cashback: cashbackAmount,
+  //       description: `Reward for paying ${txn.merchant}`,
+  //     });
 
-      await TransactionHistory.create({
-        userId,
-        billId: txn._id,
-        merchant: txn.merchant,
-        description: txn.description,
-        amount: txn.amount,
-        paidDate: new Date(),
-        fileUrl: url, // save uploaded PDF URL
-      });
+  //     await TransactionHistory.create({
+  //       userId,
+  //       billId: txn._id,
+  //       merchant: txn.merchant,
+  //       description: txn.description,
+  //       amount: txn.amount,
+  //       paidDate: new Date(),
+  //       fileUrl: url, // save uploaded PDF URL
+  //     });
 
-      return res.json({
-        message: "Bill verified and reward credited",
-        billType,
-        rewardEarned: rewardPoints,
-        totalPoints: updatedUser?.rewardPoints,
-        cashbackBalance: updatedUser?.cashback,
-        cashbackAmount,
-        uploadedFileUrl: url
-      });
+  //     return res.json({
+  //       message: "Bill verified and reward credited",
+  //       billType,
+  //       rewardEarned: rewardPoints,
+  //       totalPoints: updatedUser?.rewardPoints,
+  //       cashbackBalance: updatedUser?.cashback,
+  //       cashbackAmount,
+  //       uploadedFileUrl: url
+  //     });
 
-    } catch (err) {
-      console.error("Verify bill payment error:", err);
-      return res.status(500).json({ message: "Server error" });
+  //   } catch (err) {
+  //     console.error("Verify bill payment error:", err);
+  //     return res.status(500).json({ message: "Server error" });
+  //   }
+  // }
+public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Response> {
+  try {
+    const userId = req.userId;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ message: "PDF file is required" });
     }
+
+    // Extract text from PDF
+const pdfData = await pdf(file.buffer);
+const pdfText = pdfData.text;
+
+// Match "Amount: $120.50" style lines
+const amountMatches = [...pdfText.matchAll(/Amount:\s*\$([0-9]+(?:\.[0-9]{2})?)/gi)];
+
+if (!amountMatches.length) {
+  return res.status(400).json({ message: "No transaction amount found in PDF" });
+}
+
+// Convert to numbers
+const amounts = amountMatches.map(m => parseFloat(m[1]));
+
+const totalAmount = amounts.reduce((sum, amt) => sum + amt, 0);
+const cashbackAmount = totalAmount * 0.01; // 1% cashback
+const rewardPoints = amounts.length * 2;   // 2 points per txn
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        $inc: {
+          rewardPoints,
+          cashback: cashbackAmount,
+        },
+      },
+      { new: true }
+    );
+
+    await Reward.create({
+      userId,
+      type: "coins",
+      amount: rewardPoints,
+      cashback: cashbackAmount,
+      description: `Reward for ${amounts.length} transactions`,
+    });
+
+    return res.json({
+      message: "Bill verified and reward credited",
+      transactions: amounts.length,
+      totalAmount,
+      rewardEarned: rewardPoints,
+      cashbackAmount,
+      totalPoints: updatedUser?.rewardPoints,
+      cashbackBalance: updatedUser?.cashback,
+    });
+  } catch (err) {
+    console.error("Verify bill payment error:", err);
+    return res.status(500).json({ message: "Server error" });
   }
+}
 
 }
