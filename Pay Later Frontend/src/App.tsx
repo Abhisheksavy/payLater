@@ -32,6 +32,7 @@ const AppContent = () => {
 
   return (
     <Routes>
+      {/* Public routes - no Quiltt needed */}
       <Route path="/" element={<Index />} />
       <Route
         path="/auth"
@@ -42,48 +43,61 @@ const AppContent = () => {
         }
       />
       <Route path="/quiltt" element={<Quiltt />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/loading" element={<Loading />} />
+
+      {/* Protected routes with Quiltt */}
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
-            {isMobile ? <MobileDashboard /> : <Dashboard />}
-          </ProtectedRoute>
+          <QuilttProviderGate>
+            <ProtectedRoute>
+              {isMobile ? <MobileDashboard /> : <Dashboard />}
+            </ProtectedRoute>
+          </QuilttProviderGate>
         }
       />
       <Route
         path="/bills"
         element={
-          <ProtectedRoute>
-            {isMobile ? <MobileBills /> : <Bills />}
-          </ProtectedRoute>
+          <QuilttProviderGate>
+            <ProtectedRoute>
+              {isMobile ? <MobileBills /> : <Bills />}
+            </ProtectedRoute>
+          </QuilttProviderGate>
         }
       />
       <Route
         path="/rewards"
         element={
-          <ProtectedRoute>
-            {isMobile ? <MobileRewards /> : <Rewards />}
-          </ProtectedRoute>
+          <QuilttProviderGate>
+            <ProtectedRoute>
+              {isMobile ? <MobileRewards /> : <Rewards />}
+            </ProtectedRoute>
+          </QuilttProviderGate>
         }
       />
       <Route
         path="/payments"
         element={
-          <ProtectedRoute>
-            <MobilePayments />
-          </ProtectedRoute>
+          <QuilttProviderGate>
+            <ProtectedRoute>
+              <MobilePayments />
+            </ProtectedRoute>
+          </QuilttProviderGate>
         }
       />
       <Route
         path="/profile"
         element={
-          <ProtectedRoute>
-            <MobileProfile />
-          </ProtectedRoute>
+          <QuilttProviderGate>
+            <ProtectedRoute>
+              <MobileProfile />
+            </ProtectedRoute>
+          </QuilttProviderGate>
         }
       />
-      <Route path="/pricing" element={<Pricing />} />
-      <Route path="/loading" element={<Loading />} />
+
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>

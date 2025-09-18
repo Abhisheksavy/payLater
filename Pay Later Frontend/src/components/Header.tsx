@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { CreditCard, Home, Plus, User, LogOut, HouseIcon } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import AddBillModal from "./AddBillModal";
@@ -10,6 +10,11 @@ import Quiltt from "@/Quiltt";
 
 const Header = () => {
   const { user, logout } = useAuth();
+  const location = useLocation();
+
+  // Routes that have QuilttProviderGate available
+  const protectedRoutes = ['/dashboard', '/bills', '/rewards', '/payments', '/profile'];
+  const isOnProtectedRoute = protectedRoutes.some(route => location.pathname.startsWith(route));
 
   return (
     <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50 font-inter">
@@ -38,7 +43,7 @@ const Header = () => {
         <div className="flex items-center space-x-4">
           {user ? (
             <>
-              <Quiltt />
+              {isOnProtectedRoute && <Quiltt />}
               <AddBillModal>
                 <Button variant="customBlue" size="sm" className="gap-2">
                   <Plus className="w-4 h-4" />
