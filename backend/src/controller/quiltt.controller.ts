@@ -30,8 +30,9 @@ function generateConsistentUUID(mongoId: string): string {
 class QuilttController {
   public async sessions(req: AuthRequest, res: Response): Promise<Response> {
     const mongoUserId = req.userId;
+    console.log(mongoUserId)
     const user = await User.findById(mongoUserId);
-
+    console.log(user)
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }

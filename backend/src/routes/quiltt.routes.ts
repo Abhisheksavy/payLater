@@ -4,7 +4,7 @@ import { quilttController } from "../controller/quiltt.controller.js";
 
 const router = Router();
 
-router.post("/sessions", quilttController.sessions)
+router.post("/sessions", authCheck, quilttController.sessions)
 // Note: Manual save-connection route removed - now handled by webhooks
 router.get("/user-connections", authCheck, quilttController.getUserConnections)
 router.delete("/connections/:connectionId", authCheck, quilttController.disconnectConnection)
