@@ -14,6 +14,7 @@ import Pricing from "./pages/Pricing";
 // import UserDashboard from "./pages/UserDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 // Mobile pages
 import MobileDashboard from "./pages/mobile/MobileDashboard";
 import MobileBills from "./pages/mobile/MobileBills";
@@ -32,33 +33,55 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
-      <Route path="/auth" element={<AuthPage />} />
+      <Route
+        path="/auth"
+        element={
+          <PublicRoute>
+            <AuthPage />
+          </PublicRoute>
+        }
+      />
       <Route path="/quiltt" element={<Quiltt />} />
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          {isMobile ? <MobileDashboard /> : <Dashboard />}
-        </ProtectedRoute>
-      } />
-      <Route path="/bills" element={
-        <ProtectedRoute>
-          {isMobile ? <MobileBills /> : <Bills />}
-        </ProtectedRoute>
-      } />
-      <Route path="/rewards" element={
-        <ProtectedRoute>
-          {isMobile ? <MobileRewards /> : <Rewards />}
-        </ProtectedRoute>
-      } />
-      <Route path="/payments" element={
-        <ProtectedRoute>
-          <MobilePayments />
-        </ProtectedRoute>
-      } />
-      <Route path="/profile" element={
-        <ProtectedRoute>
-          <MobileProfile />
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            {isMobile ? <MobileDashboard /> : <Dashboard />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/bills"
+        element={
+          <ProtectedRoute>
+            {isMobile ? <MobileBills /> : <Bills />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rewards"
+        element={
+          <ProtectedRoute>
+            {isMobile ? <MobileRewards /> : <Rewards />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute>
+            <MobilePayments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <MobileProfile />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/loading" element={<Loading />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
@@ -73,9 +96,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <QuilttProviderGate>
-          <AppContent />
-        </QuilttProviderGate>
+        <AppContent />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

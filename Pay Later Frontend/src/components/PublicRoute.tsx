@@ -1,13 +1,12 @@
-import { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import QuilttProviderGate from "@/QuilttProviderGate";
+import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface ProtectedRouteProps {
+interface PublicRouteProps {
   children: ReactNode;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+const PublicRoute = ({ children }: PublicRouteProps) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
@@ -23,11 +22,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
   }
 
-  return <QuilttProviderGate>{children}</QuilttProviderGate>;
+  return <>{children}</>;
 };
 
-export default ProtectedRoute;
+export default PublicRoute;
