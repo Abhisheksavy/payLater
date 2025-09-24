@@ -14,9 +14,9 @@ router.get("/recurring/false", authCheck, billController.getNonRecurring);
 router.get("/upcoming", authCheck, billController.getUpcoming);
 router.get("/generateUpcoming", authCheck, billController.getUpcoming);
 router.post("/payBill", authCheck, billController.payBill);
-const upload = multer({ dest: "uploads/" });
-// const storage = multer.memoryStorage();
-// const upload = multer({ storage });
+// const upload = multer({ dest: "uploads/" });
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 router.post("/verifyBillPayment", authCheck, upload.single("pdf"), billController.verifyBillPayment);
 
 export default router;
