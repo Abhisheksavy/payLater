@@ -293,7 +293,8 @@ export class RecurringBillController {
 
       // const dataBuffer = fs.readFileSync(file.path); commented for vercel deployment , works in localhost
       // Read the PDF file
-      const dataBuffer = fs.readFileSync(file.path);
+      // const dataBuffer = fs.readFileSync(file.path);
+      const dataBuffer = file.buffer;
 
       // Upload to Vercel Blob
       const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
