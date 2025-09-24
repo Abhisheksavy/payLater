@@ -103,8 +103,10 @@ export default {
 				'card': 'var(--shadow-card)'
 			},
 			fontFamily: {
-        myfont: ['Segoe'],
-      },
+				myfont: ['Segoe'],
+				dm: ["DM-Sans", "sans-serif"],
+				montserrat: ["Montserrat", "sans-serif"],
+			},
 		}
 	},
 	plugins: [tailwindcssAnimate],

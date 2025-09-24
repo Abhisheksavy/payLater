@@ -21,7 +21,7 @@ const NotFound = () => {
           Sorry, we couldn't find the page you're looking for. It might have been moved or doesn't exist.
         </p>
         <Link to="/">
-          <Button variant="hero" size="lg">
+          <Button variant="customBlue" size="lg">
             Return to Home
           </Button>
         </Link>

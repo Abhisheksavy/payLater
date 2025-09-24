@@ -24,6 +24,7 @@ import MobileProfile from "./pages/mobile/MobileProfile";
 import Quiltt from "./Quiltt";
 import Loading from "./pages/Loading";
 import QuilttProviderGate from "./QuilttProviderGate";
+import AddCard from "./pages/AddCard";
 
 const queryClient = new QueryClient();
 
@@ -82,11 +83,14 @@ const AppContent = () => {
         element={
           <QuilttProviderGate>
             <ProtectedRoute>
-              <MobilePayments />
+          <MobilePayments />
             </ProtectedRoute>
           </QuilttProviderGate>
         }
-      />
+      >
+        <Route path="addCard" element={<AddCard />} />
+      </Route>
+
       <Route
         path="/profile"
         element={
@@ -97,6 +101,12 @@ const AppContent = () => {
           </QuilttProviderGate>
         }
       />
+      {/* <Route
+        path="/addCard"
+        element={
+          <AddCard />
+        }
+      /> */}
 
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />

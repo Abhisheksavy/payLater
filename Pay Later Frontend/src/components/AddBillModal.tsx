@@ -9,15 +9,26 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Upload, X, FileText, Image, Plus, Calculator } from "lucide-react";
+import { Upload, X, FileText, Plus, Calculator, Loader2 } from "lucide-react";
+import api from "@/lib/axios";
 
 interface AddBillModalProps {
   children: React.ReactNode;
   onBillAdded?: (bill: any) => void;
 }
 
+interface ApiResponse {
+  message: string;
+  billType: string;
+  rewardEarned: number;
+  totalPoints: number;
+  cashbackBalance: number;
+  cashbackAmount: number;
+}
+
 const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
@@ -27,9 +38,10 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
     dueDate: "",
     category: "",
     frequency: "",
-    description: ""
+    description: "",
+    pdf: null as File | null // Changed to single PDF file
   });
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null); // Single file state
   const [isDragging, setIsDragging] = useState(false);
 
   const calculatePoints = (amount: number, category: string) => {
@@ -56,15 +68,40 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
   };
 
   const handleFileUpload = (files: FileList | null) => {
-    if (!files) return;
+    if (!files || files.length === 0) return;
     
-    const validFiles = Array.from(files).filter(file => {
-      const isValidType = file.type.includes('image/') || file.type.includes('pdf') || file.type.includes('text/');
-      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
-      return isValidType && isValidSize;
-    });
+    const file = files[0]; // Take only the first file
+    
+    // Only accept PDF files
+    const isValidType = file.type === 'application/pdf' || file.type.includes('pdf');
+    const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+    
+    if (!isValidType) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload only PDF files.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!isValidSize) {
+      toast({
+        title: "File Too Large",
+        description: `File "${file.name}" exceeds 10MB limit.`,
+        variant: "destructive"
+      });
+      return;
+    }
 
-    setUploadedFiles(prev => [...prev, ...validFiles]);
+    // Set single file
+    setUploadedFile(file);
+    
+    // Update formData with PDF
+    setFormData(prev => ({
+      ...prev,
+      pdf: file
+    }));
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -73,11 +110,17 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
     handleFileUpload(e.dataTransfer.files);
   };
 
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  const removeFile = () => {
+    setUploadedFile(null);
+    
+    // Update formData
+    setFormData(prev => ({
+      ...prev,
+      pdf: null
+    }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
@@ -98,50 +141,105 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
       return;
     }
 
-    const amount = parseFloat(formData.amount);
-    const points = calculatePoints(amount, formData.category);
-    
-    const newBill = {
-      id: Date.now(),
-      ...formData,
-      amount,
-      points,
-      status: "pending",
-      files: uploadedFiles.map(file => ({ name: file.name, size: file.size, type: file.type })),
-      createdAt: new Date().toISOString(),
-      userId: user.id
-    };
+    // Check if PDF is uploaded (mandatory)
+    if (!uploadedFile) {
+      toast({
+        title: "PDF Required",
+        description: "Please upload a PDF file of your bill.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    // Save to user-specific localStorage
-    const userBillsKey = `bilt_bills_${user.id}`;
-    const existingBills = JSON.parse(localStorage.getItem(userBillsKey) || '[]');
-    localStorage.setItem(userBillsKey, JSON.stringify([...existingBills, newBill]));
+    setIsSubmitting(true);
 
-    // Update user's total points
-    const userPointsKey = `bilt_points_${user.id}`;
-    const currentPoints = parseInt(localStorage.getItem(userPointsKey) || '0');
-    localStorage.setItem(userPointsKey, (currentPoints + points).toString());
+    try {
+      // Create FormData for file upload
+      const submitFormData = new FormData();
+      
+      // Add all form fields
+      submitFormData.append('name', formData.name);
+      submitFormData.append('company', formData.company);
+      submitFormData.append('amount', formData.amount);
+      submitFormData.append('dueDate', formData.dueDate);
+      submitFormData.append('category', formData.category);
+      submitFormData.append('frequency', formData.frequency);
+      submitFormData.append('description', formData.description);
+      
+      // Add single PDF file
+      submitFormData.append('pdf', uploadedFile); // Single file with 'pdf' field name
 
-    toast({
-      title: "Bill Added Successfully!",
-      description: `You'll earn ${points} points when this bill is paid.`,
-      variant: "default"
-    });
+      console.log("Submitting formData:", formData);
 
-    onBillAdded?.(newBill);
-    setOpen(false);
-    
-    // Reset form
-    setFormData({
-      name: "",
-      company: "",
-      amount: "",
-      dueDate: "",
-      category: "",
-      frequency: "",
-      description: ""
-    });
-    setUploadedFiles([]);
+      const response = await api.post("/bill/verifyBillPayment", submitFormData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true,
+      });
+
+      const { message, billType, rewardEarned, totalPoints, cashbackBalance, cashbackAmount } = response.data;
+
+      toast({
+        title: "Bill Verified Successfully!",
+        description: `${message}. You earned ${rewardEarned} points! Total: ${totalPoints} points, Cashback: $${cashbackAmount.toFixed(2)}`,
+        variant: "default"
+      });
+
+      // Create bill object with API response data
+      const newBill = {
+        id: Date.now(),
+        ...formData,
+        amount: parseFloat(formData.amount),
+        points: rewardEarned,
+        totalPoints,
+        cashbackBalance,
+        cashbackAmount,
+        billType,
+        status: "verified",
+        file: uploadedFile ? { name: uploadedFile.name, size: uploadedFile.size, type: uploadedFile.type } : null,
+        createdAt: new Date().toISOString(),
+        userId: user.id
+      };
+
+      // Save to user-specific localStorage (optional, since API handles it)
+      const userBillsKey = `bilt_bills_${user.id}`;
+      const existingBills = JSON.parse(localStorage.getItem(userBillsKey) || '[]');
+      localStorage.setItem(userBillsKey, JSON.stringify([...existingBills, newBill]));
+
+      // Update user's total points in localStorage
+      const userPointsKey = `bilt_points_${user.id}`;
+      localStorage.setItem(userPointsKey, totalPoints.toString());
+
+      onBillAdded?.(newBill);
+      setOpen(false);
+      
+      // Reset form
+      setFormData({
+        name: "",
+        company: "",
+        amount: "",
+        dueDate: "",
+        category: "",
+        frequency: "",
+        description: "",
+        pdf: null
+      });
+      setUploadedFile(null);
+
+    } catch (error: any) {
+      console.error("Error submitting bill:", error);
+      
+      const errorMessage = error.response?.data?.message || error.message || "Failed to verify bill";
+      
+      toast({
+        title: "Verification Failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const estimatedPoints = formData.amount && formData.category ? 
@@ -171,6 +269,7 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div className="space-y-2">
@@ -181,6 +280,7 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
                 value={formData.company}
                 onChange={(e) => handleInputChange("company", e.target.value)}
                 required
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -196,11 +296,12 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
                 value={formData.amount}
                 onChange={(e) => handleInputChange("amount", e.target.value)}
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
-              <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+              <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)} disabled={isSubmitting}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -220,7 +321,7 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="frequency">Frequency</Label>
-              <Select value={formData.frequency} onValueChange={(value) => handleInputChange("frequency", value)}>
+              <Select value={formData.frequency} onValueChange={(value) => handleInputChange("frequency", value)} disabled={isSubmitting}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
@@ -241,6 +342,7 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
               type="date"
               value={formData.dueDate}
               onChange={(e) => handleInputChange("dueDate", e.target.value)}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -258,19 +360,19 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  You'll earn these points when this bill is paid
+                  Estimated points - actual rewards may vary after verification
                 </p>
               </CardContent>
             </Card>
           )}
 
-          {/* File Upload */}
+          {/* Single PDF Upload - Mandatory */}
           <div className="space-y-4">
-            <Label>Upload Bill Documents (Optional)</Label>
+            <Label className="text-base font-medium">Upload Bill PDF *</Label>
             <div
               className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                 isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'
-              }`}
+              } ${!uploadedFile ? 'border-red-200 bg-red-50/50' : ''}`}
               onDrop={handleDrop}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -280,49 +382,54 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
             >
               <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
               <p className="text-sm text-muted-foreground mb-2">
-                Drag and drop files here, or{" "}
+                Drag and drop a PDF file here, or{" "}
                 <label className="text-primary cursor-pointer hover:underline">
                   browse
                   <input
                     type="file"
-                    multiple
-                    accept="image/*,.pdf,.txt,.doc,.docx"
+                    accept=".pdf,application/pdf"
                     className="hidden"
                     onChange={(e) => handleFileUpload(e.target.files)}
+                    disabled={isSubmitting}
                   />
                 </label>
               </p>
               <p className="text-xs text-muted-foreground">
-                Supports: Images, PDFs, Documents (Max 10MB each)
+                <span className="text-red-600 font-medium">*Required:</span> Upload a PDF bill (Max 10MB)
               </p>
+              {!uploadedFile && (
+                <p className="text-xs text-red-600 mt-1">
+                  A PDF file is required for bill verification
+                </p>
+              )}
             </div>
 
-            {/* Uploaded Files */}
-            {uploadedFiles.length > 0 && (
+            {/* Uploaded File */}
+            {uploadedFile && (
               <div className="space-y-2">
-                {uploadedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                    <div className="flex items-center gap-2">
-                      {file.type.includes('image/') ? (
-                        <Image className="w-4 h-4" />
-                      ) : (
-                        <FileText className="w-4 h-4" />
-                      )}
-                      <span className="text-sm font-medium">{file.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({(file.size / 1024 / 1024).toFixed(1)}MB)
-                      </span>
+                <p className="text-sm font-medium text-green-600">
+                  ✓ PDF file uploaded
+                </p>
+                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-red-600" />
+                    <div>
+                      <span className="text-sm font-medium">{uploadedFile.name}</span>
+                      <p className="text-xs text-muted-foreground">
+                        {(uploadedFile.size / 1024 / 1024).toFixed(1)}MB • PDF Document
+                      </p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFile(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
                   </div>
-                ))}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeFile}
+                    disabled={isSubmitting}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -336,15 +443,33 @@ const AddBillModal = ({ children, onBillAdded }: AddBillModalProps) => {
               value={formData.description}
               onChange={(e) => handleInputChange("description", e.target.value)}
               rows={3}
+              disabled={isSubmitting}
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3">
-            <Button type="submit" variant="customBlue" className="flex-1">
-              Add Bill & Earn {estimatedPoints} Points
+            <Button
+              type="submit"
+              variant="customBlue"
+              className="flex-1"
+              disabled={isSubmitting || !uploadedFile}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Verifying Bill...
+                </>
+              ) : (
+                "Verify Bill & Earn Points"
+              )}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setOpen(false)}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
           </div>

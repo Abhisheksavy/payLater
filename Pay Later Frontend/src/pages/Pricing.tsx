@@ -7,7 +7,7 @@ import KycModal from "@/components/KycModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Check, Star, Zap, Crown, Gift } from "lucide-react";
+import { Check, Star, Zap, Crown, Gift, CheckCircle, CheckCircle2 } from "lucide-react";
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
@@ -19,62 +19,43 @@ const Pricing = () => {
 
   const plans = [
     {
-      name: "Basic",
-      description: "Perfect for getting started with bill management",
-      monthlyPrice: 0,
-      yearlyPrice: 0,
-      icon: Star,
-      features: [
-        "Track up to 5 bills",
-        "Basic reminders",
-        "Earn 1 point per $1 spent",
-        "Email support",
-        "Mobile app access"
-      ],
-      popular: false,
-      cta: "Get Started Free"
-    },
-    {
-      name: "Pro",
-      description: "Ideal for active bill payers who want more rewards",
+      name: "Pro (Most Popular)",
+      description: "Advanced features for serious financial management",
       monthlyPrice: 9.99,
-      yearlyPrice: 99.99,
-      icon: Zap,
+      yearlyPrice: 95.90,
       features: [
-        "Unlimited bill tracking",
-        "Smart notifications",
-        "Earn 2 points per $1 spent",
-        "Priority support",
-        "Advanced analytics",
-        "Custom categories",
-        "Auto-pay setup assistance"
+        "Pay all everyday bills (rent, car, phone, internet, insurance, utilities).",
+        "Earn cash back on every bill paid.",
+        "Flexible due date scheduling & payment options.",
+        "Instant payment confirmation with digital receipts.",
+        "Smart bill reminders and alerts.",
+        "Priority customer support.",
+        "Monthly spending insights and detailed reports.",
+        "Access to installment and split payment options."
       ],
-      popular: true,
-      cta: "Start Pro Trial"
+      popular: true
     },
     {
-      name: "Premium",
-      description: "Maximum rewards and features for power users",
+      name: "Family Plan",
+      description: "Share financial management with your family",
       monthlyPrice: 19.99,
-      yearlyPrice: 199.99,
-      icon: Crown,
+      yearlyPrice: 191.90,
       features: [
-        "Everything in Pro",
-        "Earn 3 points per $1 spent",
-        "Exclusive premium rewards",
-        "Personal account manager",
-        "Custom integrations",
-        "Advanced reporting",
-        "Early access to new features",
-        "Cashback bonuses"
+        "Pay all your everyday bills (rent, car, phone, internet, utilities, insurance).",
+        "Earn cashback and reward points on every payment.",
+        "Flexible scheduling — pay on or before the due date.",
+        "Instant payment confirmation and digital receipts.",
+        "Smart reminders so you never miss a bill.",
+        "Access to installment and “split payment” options.",
+        "Monthly insights and spending reports.",
+        "Priority customer support (Pro & Premium)."
       ],
-      popular: false,
-      cta: "Go Premium"
+      popular: false
     }
   ];
 
   const getPrice = (plan: typeof plans[0]) => {
-    return billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
+    return billingCycle === 'monthly' ? parseFloat(plan.monthlyPrice.toFixed(2)) : parseFloat(plan.yearlyPrice.toFixed(2));
   };
 
   const getSavings = (plan: typeof plans[0]) => {
@@ -82,7 +63,8 @@ const Pricing = () => {
     const monthlyCost = plan.monthlyPrice * 12;
     const yearlyCost = plan.yearlyPrice;
     const savings = monthlyCost - yearlyCost;
-    return savings;
+    const rounded = savings.toFixed(2)
+    return rounded;
   };
 
   const handlePlanSelect = (planName: string) => {
@@ -122,88 +104,102 @@ const Pricing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Header />
       <main className="py-16">
         <div className="container mx-auto px-4">
           {/* Header Section */}
-          <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Choose Your Plan
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              Unlock more rewards, features, and benefits as you level up your bill paying experience
-            </p>
-            
+          <div className="text-center mb-16 ">
             {/* Billing Toggle */}
-            <div className="inline-flex items-center bg-muted p-1 rounded-lg mb-12">
+            <div className="inline-flex items-center bg-muted p-1 rounded-lg mb-12 text-sm">
               <button
                 onClick={() => setBillingCycle('monthly')}
-                className={`px-6 py-2 rounded-md transition-all ${
-                  billingCycle === 'monthly'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground'
-                }`}
+                className={`px-6 py-2 rounded-sm transition-all font-medium leading-[115%] ${billingCycle === 'monthly'
+                  ? 'bg-white text-foreground shadow-sm'
+                  : 'text-[#170F49]'
+                  }`}
               >
-                Monthly
+                Monthly billing
               </button>
               <button
                 onClick={() => setBillingCycle('yearly')}
-                className={`px-6 py-2 rounded-md transition-all ${
-                  billingCycle === 'yearly'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground'
-                }`}
+                className={`px-6 py-1 rounded-md transition-all font-medium leading-[115%] ${billingCycle === 'yearly'
+                  ? 'bg-white text-foreground shadow-sm'
+                  : 'text-muted-foreground'
+                  }`}
               >
-                Yearly
-                <Badge variant="secondary" className="ml-2 text-xs">Save 20%</Badge>
+                Annually billing
+                <Badge variant="custom" className="ml-2 text-xs">Save 20%</Badge>
               </button>
             </div>
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <div className="flex md:flex-row flex-col w-full justify-center items-center md:items-start gap-10">
             {plans.map((plan) => {
-              const Icon = plan.icon;
               const price = getPrice(plan);
               const savings = getSavings(plan);
-              
+
               return (
-                <Card 
-                  key={plan.name} 
-                  className={`relative ${
-                    plan.popular 
-                      ? 'border-primary shadow-lg ring-1 ring-primary/20' 
-                      : ''
-                  }`}
+                <Card
+                  key={plan.name}
+                  className="relative w-[370px] h-fit rounded-[32px] shadow-[0_2px_15px_0_rgba(25,33,61,0.1)]"
                 >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                      <Badge className="bg-primary text-primary-foreground px-4 py-1">
-                        Most Popular
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  <CardHeader className="text-center pb-6">
-                    <div className="flex justify-center mb-4">
-                      <div className="p-3 rounded-full bg-primary/10">
-                        <Icon className="w-6 h-6 text-primary" />
-                      </div>
-                    </div>
-                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                    <CardDescription className="text-base">
-                      {plan.description}
-                    </CardDescription>
+                  <CardHeader
+                    className={`
+                    text-center
+                    pb-6
+                    px-10
+                    ${plan.popular ? "rounded-[32px] bg-[linear-gradient(175.23deg,#F1F0FB_-80.34%,#FFFFFF_94.86%)]" : ""}
+                    `}
+                  >
+                    <CardTitle
+                      className="
+                        text-center
+                        font-medium
+                        text-2xl
+                        leading-[115%]
+                        tracking-normal
+                        font-[var(--font-primary)]
+                        "
+                    >
+                      {plan.name}
+                    </CardTitle>
+
                     <div className="pt-4">
-                      <div className="flex items-baseline justify-center">
-                        <span className="text-4xl font-bold">
+                      <div className="flex">
+                        <span
+                          className="
+                          text-center
+                          font-bold
+                          text-5xl
+                          leading-[115%]
+                          tracking-normal
+                          font-[var(--font-primary)]
+                          "
+                        >
                           ${price}
                         </span>
+
                         {price > 0 && (
-                          <span className="text-muted-foreground ml-2">
-                            /{billingCycle === 'monthly' ? 'month' : 'year'}
+                          <span
+                            className="
+    ml-2
+    flex
+    flex-col
+    items-start
+    justify-end
+    mb-2
+    font-normal
+    text-[#6F6C8F]
+    leading-[115%]
+    text-sm
+  "
+                          >
+                            <p>per</p>
+                            <p>{billingCycle === 'monthly' ? 'month' : 'year'}</p>
                           </span>
+
                         )}
                       </div>
                       {billingCycle === 'yearly' && savings && (
@@ -212,25 +208,63 @@ const Pricing = () => {
                         </p>
                       )}
                     </div>
+                    <CardDescription
+                      className="
+    text-base
+    text-start
+    font-normal
+    leading-[150%]
+    tracking-normal
+    text-sm
+    text-[#514F6E]
+  "
+                    >
+                      {plan.description}
+                    </CardDescription>
+
                   </CardHeader>
-                  
-                  <CardContent className="space-y-6">
+
+                  <CardContent className="space-y-6 border-t border-t-2 px-8">
+                    <p className="mt-6 ">
+                      What&rsquo;s included:
+                      {
+                        plan.popular ? null : (
+                          <p className="text-sm font-normal leading-[115%] tracking-normal text-[#6F6C8F] mt-2">
+                            Everything in Pro Plan, plus:
+                          </p>
+                        )
+                      }
+                    </p>
+
                     <ul className="space-y-3">
                       {plan.features.map((feature, index) => (
-                        <li key={index} className="flex items-center gap-3">
-                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                          <span className="text-sm">{feature}</span>
+                        <li key={index} className="flex items-center gap-3 space-y-1">
+                          <span className="flex items-center justify-center w-4 h-4 rounded-full bg-primary flex-shrink-0">
+                            <Check className="w-3 h-3 text-white" />
+                          </span>
+                          <span
+                            className="
+    text-sm
+    font-normal
+    leading-[115%]
+    tracking-normal
+    text-[#6F6C8F]
+  "
+                          >
+                            {feature}
+                          </span>
+
                         </li>
                       ))}
                     </ul>
-                    
-                    <Button 
-                      className="w-full" 
-                      variant={plan.popular ? "default" : "outline"}
+
+                    <Button
+                      className="w-full"
+                      variant="customBlue"
                       size="lg"
                       onClick={() => handlePlanSelect(plan.name)}
                     >
-                      {plan.cta}
+                      Subscribe
                     </Button>
                   </CardContent>
                 </Card>
@@ -238,25 +272,6 @@ const Pricing = () => {
             })}
           </div>
 
-          {/* Additional Benefits */}
-          <div className="text-center bg-muted/50 rounded-lg p-8">
-            <Gift className="w-12 h-12 text-primary mx-auto mb-4" />
-            <h3 className="text-2xl font-bold mb-4">All Plans Include</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-              <div>
-                <h4 className="font-semibold mb-2">Secure & Private</h4>
-                <p className="text-muted-foreground">Bank-level encryption and privacy protection</p>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">24/7 Access</h4>
-                <p className="text-muted-foreground">Manage your bills anytime, anywhere</p>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">No Hidden Fees</h4>
-                <p className="text-muted-foreground">Transparent pricing with no surprises</p>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
 
