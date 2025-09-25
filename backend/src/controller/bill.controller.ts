@@ -373,13 +373,18 @@ export class RecurringBillController {
       }
 
       const billTypeMap: Record<string, string> = {
-        "rent|mortgage": "Rent/Mortgage",
+        "rent|mortgage": "Housing",
         "electric|water|gas|internet|phone|telecom": "Utilities",
-        "netflix|spotify|prime|disney|hotstar|gym|club|itunes|apple|google play|apple music": "Subscription",
+        "car|auto|vehicle": "Car Payment",
+        "netflix|spotify|prime|disney|hotstar|gym|club|itunes|apple|google play|apple music": "Subscriptions",
         "insurance|premium|policy": "Insurance",
         "loan|credit card|emi|payment": "Loan",
-        "maintenance|school|fees": "Other Fees",
+        "maintenance|school|fees": "Education",
+        "health|wellness|fitness": "Health & Wellness",
+        "shopping|retail|clothing|amazon|mall": "Shopping & Retail",
+        ".*": "Other"
       };
+
 
       function classifyBill(text: string): string {
         for (const pattern in billTypeMap) {
@@ -392,11 +397,10 @@ export class RecurringBillController {
       const combinedText = `${txn.merchant || ""} ${txn.description || ""}`;
       const billType = classifyBill(combinedText);
 
-      const relatedBill = await Bill.findOne({ userId, merchant: txn.merchant });
-
+      const finalBillType = req.body.category?.toLowerCase() === billType.toLowerCase() ? req.body.category : billType;
       // console.log("Bill Recurring:", relatedBill?.recurring);
 
-      const percentBack = rewardConfig[relatedBill?.billType || "Other"] || 0;
+      const percentBack = rewardConfig[finalBillType || "Other"] || 0;
       const rewardBase = Math.abs(txn.amount) * percentBack;
       const rewardPoints = Math.round(rewardBase * rewardMultiplier);
       const cashbackAmount = Math.abs(txn.amount) * 0.01;

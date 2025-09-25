@@ -1,12 +1,15 @@
 // config/reward.config.ts
 export const rewardConfig: Record<string, number> = {
-  "Rent/Mortgage": 0.01, // 1%
-  "Utilities": 0.02,     // 2%
-  "Subscription": 0.05,  // 5%
+  "Housing": 0.01,
+  "Utilities": 0.02,
+  "Subscriptions": 0.05,
   "Insurance": 0.01,
-  "Loan": 0.01,
-  "Other Fees": 0.03,
+  "Education": 0.01,
+  "Shopping & Retail": 0.03,
+  "Phone & Internet": 0.02,
+  "Car Payment": 0.01,
+  "Health & Wellness": 0.02,
   "Other": 0.02,
 };
 
-export const rewardMultiplier = 2; // global multiplier
+export const rewardMultiplier = 2;
