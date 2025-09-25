@@ -27,6 +27,7 @@ const Header = () => {
           <Link to="/features" className="text-primary_gray hover:text-primary transition-colors">Features</Link>
           <Link to="/rewards" className="text-primary_gray hover:text-primary transition-colors">Rewards</Link>
           <Link to="/support" className="text-primary_gray hover:text-primary transition-colors">Support</Link>
+          <Link to="/pricing" className="text-primary_gray hover:text-primary transition-colors">Pricing</Link>
         </nav>
       ) : (
       <nav className="hidden md:flex items-center space-x-6">
@@ -36,6 +37,7 @@ const Header = () => {
               </Link>
           <Link to="/bills" className="text-primary_gray hover:text-primary transition-colors">Bill</Link>
           <Link to="/rewards" className="text-primary_gray hover:text-primary transition-colors">Rewards</Link>
+          <Link to="/pricing" className="text-primary_gray hover:text-primary transition-colors">Pricing</Link>
         </nav>
       )}
         

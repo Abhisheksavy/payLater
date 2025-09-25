@@ -224,7 +224,9 @@ const Pricing = () => {
 
                   </CardHeader>
 
-                  <CardContent className="space-y-6 border-t border-t-2 px-8">
+                  <CardContent className={`border-t border-t-2 px-8
+                  ${plan.popular ? "space-y-11" : "space-y-6 "}
+                  `}>
                     <p className="mt-6 ">
                       What&rsquo;s included:
                       {

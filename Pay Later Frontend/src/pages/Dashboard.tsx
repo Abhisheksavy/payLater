@@ -41,12 +41,14 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import Bills from "./Bills";
 
 interface Bill {
+  nextPaymentDate: string | number | Date;
   id: string;
   name: string;
-  company: string;
-  amount: number;
+  merchant: string;
+  nextAmount: number;
   dueDate: string;
   category: string;
   status: "pending" | "paid" | "overdue";
@@ -72,8 +74,8 @@ const Dashboard = () => {
     queryKey: ["dashboardSummary"],
     queryFn: async () => {
       const { data } = await api.post("/user/dashboardSummary", {
-      userId: user.id,
-    });
+        userId: user.id,
+      });
       return data;
     },
     enabled: !!user,
@@ -127,6 +129,19 @@ const Dashboard = () => {
     },
   });
 
+  useEffect(() => {
+    const fetchBills = async () => {
+      try {
+        const res = await api.get("/bill/upcoming");
+        setBills(res.data || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchBills();
+    console.log(bills)
+  }, []);
+
   // Use dashboard data from API or fallback to defaults
   const totalPoints = dashboardData?.totalPoints ?? 0;
   const cashBack = dashboardData?.cashBack ?? 0;
@@ -175,9 +190,11 @@ const Dashboard = () => {
   };
 
   const tierInfo = getTierInfo(totalPoints);
+  console.log(bills)
   const upcomingBills = bills
     .filter((bill) => bill.status === "pending")
     .slice(0, 3);
+  console.log(upcomingBills)
   const recentActivity = bills
     .filter((bill) => bill.status === "paid")
     .slice(0, 3);
@@ -185,7 +202,7 @@ const Dashboard = () => {
   // Additional dashboard data
   const categorySpending = bills.reduce((acc, bill) => {
     if (bill.status === "paid") {
-      acc[bill.category] = (acc[bill.category] || 0) + bill.amount;
+      acc[bill.category] = (acc[bill.category] || 0) + bill.nextAmount;
     }
     return acc;
   }, {} as Record<string, number>);
@@ -223,12 +240,12 @@ const Dashboard = () => {
 
   const monthlySpending = bills
     .filter((bill) => bill.status === "paid")
-    .reduce((total, bill) => total + bill.amount, 0);
+    .reduce((total, bill) => total + bill.nextAmount, 0);
 
   const upcomingDueDates = bills
     .filter((bill) => bill.status === "pending")
     .sort(
-      (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      (a, b) => new Date(a.nextPaymentDate).getTime() - new Date(b.nextPaymentDate).getTime()
     )
     .slice(0, 5);
 
@@ -261,9 +278,9 @@ const Dashboard = () => {
 
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-      })
+      year: "numeric",
+      month: "long",
+    })
     : "Recently";
 
   // Show loading state
@@ -295,7 +312,7 @@ const Dashboard = () => {
             <div className="text-center py-8">
               <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">Failed to load dashboard data</p>
-              <Button 
+              <Button
                 onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboardSummary"] })}
                 variant="outline"
               >
@@ -477,24 +494,20 @@ const Dashboard = () => {
                           <div>
                             <h4 className="font-medium">{bill.name}</h4>
                             <p className="text-sm text-muted-foreground">
-                              {bill.company}
+                              {bill.merchant}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              Due: {new Date(bill.dueDate).toLocaleDateString()}
+                              Due: {new Date(bill.nextPaymentDate).toLocaleDateString()}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">${bill.amount}</p>
-                            <p className="text-sm text-primary">
-                              +{bill.rewards} points
-                            </p>
-                            <Button
-                              size="sm"
-                              onClick={() => handlePayBill(bill.id)}
-                              className="mt-2"
-                            >
-                              Pay Now
-                            </Button>
+                            <p className="font-medium">${Math.abs(bill.nextAmount).toFixed(2)} (estimated) </p>
+
+                            <AddBillModal>
+                              <Button className="w-fit" variant="custom">
+                                Pay Now
+                              </Button>
+                            </AddBillModal>
                           </div>
                         </div>
                       ))}
@@ -531,35 +544,31 @@ const Dashboard = () => {
                       return (
                         <div
                           key={achievement.id}
-                          className={`p-4 rounded-lg border ${
-                            achievement.earned
+                          className={`p-4 rounded-lg border ${achievement.earned
                               ? "bg-primary/5 border-primary/20"
                               : "bg-muted/50 border-muted"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-3">
                             <div
-                              className={`p-2 rounded-full ${
-                                achievement.earned
+                              className={`p-2 rounded-full ${achievement.earned
                                   ? "bg-primary/10"
                                   : "bg-muted"
-                              }`}
+                                }`}
                             >
                               <Icon
-                                className={`w-4 h-4 ${
-                                  achievement.earned
+                                className={`w-4 h-4 ${achievement.earned
                                     ? "text-primary"
                                     : "text-muted-foreground"
-                                }`}
+                                  }`}
                               />
                             </div>
                             <div>
                               <h4
-                                className={`font-medium ${
-                                  achievement.earned
+                                className={`font-medium ${achievement.earned
                                     ? "text-foreground"
                                     : "text-muted-foreground"
-                                }`}
+                                  }`}
                               >
                                 {achievement.title}
                               </h4>
@@ -808,10 +817,9 @@ const Dashboard = () => {
                   {upcomingDueDates.length > 0 ? (
                     <div className="space-y-3">
                       {upcomingDueDates.map((bill) => {
-                        const dueDate = new Date(bill.dueDate);
+                        const dueDate = new Date(bill.nextPaymentDate);
                         const isUrgent =
-                          dueDate.getTime() - Date.now() <
-                          3 * 24 * 60 * 60 * 1000; // 3 days
+                          dueDate.getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
 
                         return (
                           <div
@@ -819,7 +827,7 @@ const Dashboard = () => {
                             className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                           >
                             <div>
-                              <p className="font-medium text-sm">{bill.name}</p>
+                              <p className="font-medium text-sm">{bill.merchant}</p>
                               <p className="text-xs text-muted-foreground">
                                 {dueDate.toLocaleDateString("en-US", {
                                   month: "short",
@@ -829,13 +837,10 @@ const Dashboard = () => {
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-medium">
-                                ${bill.amount}
+                                ${Math.abs(bill.nextAmount).toFixed(2)}
                               </p>
                               {isUrgent && (
-                                <Badge
-                                  variant="destructive"
-                                  className="text-xs"
-                                >
+                                <Badge variant="destructive" className="text-xs">
                                   Due Soon
                                 </Badge>
                               )}
@@ -843,6 +848,7 @@ const Dashboard = () => {
                           </div>
                         );
                       })}
+
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">
@@ -871,7 +877,7 @@ const Dashboard = () => {
                           <div>
                             <p className="font-medium text-sm">{bill.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {bill.company}
+                              {bill.merchant}
                             </p>
                           </div>
                           <div className="text-right">
