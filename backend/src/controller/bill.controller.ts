@@ -295,7 +295,8 @@ export class RecurringBillController {
 
       // // Upload to Vercel Blob
       const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
-        access: 'public'
+        access: 'public',
+        allowOverwrite: true
       });
 
       // // url now contains the public URL of the uploaded PDF
