@@ -5,7 +5,7 @@ export interface IBill extends Document {
   merchant: string;
   description: string;
   avgAmount: number;
-  frequency: "monthly" | "weekly" | "biweekly" | "irregular" | null;
+  frequency: "monthly" | "weekly" | "irregular" | null;
   nextDueDate?: Date;
   verified: boolean;
   recurring: boolean;
@@ -20,7 +20,7 @@ const BillSchema = new Schema<IBill>({
   avgAmount: { type: Number, required: true },
   frequency: {
     type: String,
-    enum: ["monthly", "weekly", "biweekly", "irregular"],
+    enum: ["monthly", "weekly", "irregular"],
     required: true,
     default: null,
   },

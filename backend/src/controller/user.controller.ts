@@ -294,7 +294,7 @@ class UserController {
 }
 
   // Helper methods for bill detection (moved from bill controller)
-  private detectFrequency = (dates: Date[]): "monthly" | "weekly" | "biweekly" | "irregular" => {
+  private detectFrequency = (dates: Date[]): "monthly" | "weekly" | "irregular" => {
     if (dates.length < 2) return "irregular";
     const diffs = [];
     for (let i = 1; i < dates.length; i++) {
@@ -306,7 +306,6 @@ class UserController {
     const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
     if (avg > 25 && avg < 35) return "monthly";
     if (avg > 4 && avg <= 9) return "weekly";
-    if (avg > 9 && avg < 16) return "biweekly";
     return "irregular";
   };
 
@@ -332,9 +331,6 @@ class UserController {
     switch (frequency) {
       case "weekly":
         newDate.setDate(newDate.getDate() + 7);
-        break;
-      case "biweekly":
-        newDate.setDate(newDate.getDate() + 14);
         break;
       case "monthly":
         newDate.setMonth(newDate.getMonth() + 1);
@@ -368,7 +364,7 @@ class UserController {
         const frequency = this.detectFrequency(r.dates.map((d: any) => new Date(d)));
 
         let recurring = false;
-        if (r.total >= 2 && ["monthly", "weekly", "biweekly"].includes(frequency)) {
+        if (r.total >= 2 && ["monthly", "weekly"].includes(frequency)) {
           recurring = true;
         }
 

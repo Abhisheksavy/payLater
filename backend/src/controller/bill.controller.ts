@@ -24,7 +24,7 @@ export class RecurringBillController {
     "maintenance", "school", "fees", "apple", "itunes", "app store", "google play", "apple music"
   ];
 
-  private detectFrequency = (dates: Date[]): "monthly" | "weekly" | "biweekly" | "irregular" => {
+  private detectFrequency = (dates: Date[]): "monthly" | "weekly" | "irregular" => {
     if (dates.length < 2) return "irregular";
     const diffs = [];
     for (let i = 1; i < dates.length; i++) {
@@ -34,9 +34,8 @@ export class RecurringBillController {
       diffs.push(diff);
     }
     const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
-    if (avg > 25 && avg < 35) return "monthly";
+    if (avg > 18 && avg < 35) return "monthly";
     if (avg > 4 && avg <= 9) return "weekly";
-    if (avg > 9 && avg < 16) return "biweekly";
     return "irregular";
   };
 
@@ -84,7 +83,7 @@ export class RecurringBillController {
         const frequency = this.detectFrequency(r.dates.map((d: any) => new Date(d)));
 
         let recurring = false;
-        if (r.total >= 2 && ["monthly", "weekly", "biweekly"].includes(frequency)) {
+        if (r.total >= 2 && ["monthly", "weekly"].includes(frequency)) {
           recurring = true;
         }
 
@@ -157,9 +156,6 @@ export class RecurringBillController {
     switch (frequency) {
       case "weekly":
         newDate.setDate(newDate.getDate() + 7);
-        break;
-      case "biweekly":
-        newDate.setDate(newDate.getDate() + 14);
         break;
       case "monthly":
         newDate.setMonth(newDate.getMonth() + 1);
@@ -285,6 +281,7 @@ export class RecurringBillController {
   public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const userId = req.userId;
+      console.log(req.body)
       const file = req.file;
       console.log("file", file)
       if (!file) {
@@ -296,13 +293,13 @@ export class RecurringBillController {
       // const dataBuffer = fs.readFileSync(file.path);
       const dataBuffer = file.buffer;
 
-      // Upload to Vercel Blob
+      // // Upload to Vercel Blob
       const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
         access: 'public'
       });
 
-      // url now contains the public URL of the uploaded PDF
-      console.log("Uploaded PDF URL:", url);
+      // // url now contains the public URL of the uploaded PDF
+      // console.log("Uploaded PDF URL:", url);
 
       const pdfData = await pdf(dataBuffer);
       const pdfText = pdfData.text;
@@ -311,13 +308,13 @@ export class RecurringBillController {
 
       const pdfDateMatch = pdfText.match(/(\d{4}-\d{2}-\d{2})/);
 
+      const pdfAmount = pdfText.match(/Amount:\s*\$([\d,.]+)/i)?.[1] ? Number(pdfText.match(/Amount:\s*\$([\d,.]+)/i)![1].replace(/,/g, "")) : null;
+
       const user = await User.findById(userId);
       if (!pdfDateMatch) {
         return res.status(400).json({ message: "No date found in PDF" });
       }
       const pdfDate = new Date(pdfDateMatch[1]);
-      console.log("pdfDate", pdfDate)
-      console.log("user",user);
 
       if (user && pdfDate <= user?.createdAt) {
         return res.status(400).json({
@@ -340,6 +337,37 @@ export class RecurringBillController {
       if (!txn) {
         return res.status(404).json({
           message: "No matching record found in Linked Bank Account Payment History",
+        });
+      }
+
+      if (txn.userId !== userId) {
+        return res.status(404).json({
+          message: "No matching record found in your Linked Bank Account Payment History",
+        });
+      }
+
+      if (new Date(txn.date).getTime() !== pdfDate.getTime()) {
+        return res.status(404).json({
+          message: "Dates don't match in uploaded bill & record found in Linked Bank Account Payment History",
+        });
+      }
+
+      if (txn.merchant !== req.body.company) {
+        return res.status(404).json({
+          message: "Merchant does not match between uploaded bill & Linked Bank Account Payment History",
+        });
+      }
+
+      const normalizedTxnAmount = Math.abs(Number(txn.amount));
+      const normalizedReqAmount = Math.abs(Number(req.body.amount));
+      const normalizedPdfAmount = Math.abs(Number(pdfAmount));
+
+      if (normalizedTxnAmount !== normalizedReqAmount || normalizedTxnAmount !== normalizedPdfAmount) {
+        console.log("txn.amount", normalizedTxnAmount);
+        console.log("req.body.amount", normalizedReqAmount);
+        console.log("pdfAmount", normalizedPdfAmount);
+        return res.status(404).json({
+          message: "Amount does not match between uploaded bill & Linked Bank Account Payment History",
         });
       }
 
@@ -412,6 +440,7 @@ export class RecurringBillController {
       return res.status(500).json({ message: "Server error" });
     }
   }
+
   // public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Response> {
   //   try {
   //     const userId = req.userId;
