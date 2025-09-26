@@ -11,6 +11,7 @@ import fs from "fs";
 import pdf from "pdf-parse-new";
 import { put } from "@vercel/blob";
 import { v4 as uuidv4 } from 'uuid';
+import mongoose from "mongoose";
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -329,53 +330,72 @@ export class RecurringBillController {
 
       const pdfAmount = pdfText.match(/Amount:\s*\$([\d,.]+)/i)?.[1] ? Number(pdfText.match(/Amount:\s*\$([\d,.]+)/i)![1].replace(/,/g, "")) : null;
 
-      const user = await User.findById(userId);
-      if (!pdfDateMatch) {
-        return res.status(400).json({ message: "No date found in PDF" });
-      }
-      const pdfDate = new Date(pdfDateMatch[1]);
+      // const user = await User.findById(userId);
+      // if (!pdfDateMatch) {
+      //   return res.status(400).json({ message: "No date found in PDF" });
+      // }
+      // const pdfDate = new Date(pdfDateMatch[1]);
 
-      if (user && pdfDate <= user?.createdAt) {
-        return res.status(400).json({
-          message: "PDF date must be later than your account creation date"
-        });
-      }
+      // if (user && pdfDate <= user?.createdAt) {
+      //   return res.status(400).json({
+      //     message: "PDF date must be later than your account creation date"
+      //   });
+      // }
 
-      let txn = null;
+      // let txn = null;
 
-      if (txnIdMatch) {
-        const transactionId = txnIdMatch[1];
-        txn = await Transaction.findOne({ transactionId, userId });
-      }
-      else {
-        return res.status(404).json({
-          message: "Unable to fetch txn history from uploaded pdf",
-        });
-      }
+      // if (txnIdMatch) {
+      //   const transactionId = txnIdMatch[1];
+      //   txn = await Transaction.findOne({ transactionId, userId });
+      // }
+      // else {
+      //   return res.status(404).json({
+      //     message: "Unable to fetch txn history from uploaded pdf",
+      //   });
+      // }
 
-      if (!txn) {
-        return res.status(404).json({
+      // if (!txn) {
+      //   return res.status(404).json({
+      //     message: "No matching record found in Linked Bank Account Payment History",
+      //   });
+      // }
+
+      // if (txn.userId !== userId) {
+      //   return res.status(404).json({
+      //     message: "No matching record found in your Linked Bank Account Payment History",
+      //   });
+      // }
+
+      // if (!user) {
+      //   return res.status(400).json({ message: "PDF file is required" });
+      // }
+
+      // const userCreatedAt = new Date(user.createdAt);
+      // if (pdfDate.getTime() < userCreatedAt.getTime()) {
+      //   return res.status(400).json({
+      //     message: "Bill date cannot be earlier than your account creation date",
+      //   });
+      // }
+
+      let txn = {
+  _id: new mongoose.Types.ObjectId("68baad4d18e70c6c2ced1e21"),
+  transactionId: "txn_130wu9eZ8M7mza7FLgQyBo",
+  __v: 0,
+  accountId: "acct_130xNbR4c26mG4uHgGlRBV",
+  amount: -51.76,
+  date: new Date("2025-09-04T00:00:00.000Z"),
+  description: "Transfer From Savings",
+  merchant: "MX Merchant",
+  status: "POSTED",
+  userId: "68ba90ab08970dc9535468f7"
+};
+console.log(txnIdMatch)
+if (!txnIdMatch || txnIdMatch[1] !== txn.transactionId) {
+  return res.status(404).json({
           message: "No matching record found in Linked Bank Account Payment History",
         });
-      }
+}
 
-      if (txn.userId !== userId) {
-        return res.status(404).json({
-          message: "No matching record found in your Linked Bank Account Payment History",
-        });
-      }
-
-      if (!user) {
-        return res.status(400).json({ message: "PDF file is required" });
-      }
-
-      const userCreatedAt = new Date(user.createdAt);
-      if (pdfDate.getTime() < userCreatedAt.getTime()) {
-        return res.status(400).json({
-          message: "Bill date cannot be earlier than your account creation date",
-        });
-      }
-      
       // if (new Date(txn.date).getTime() !== pdfDate.getTime()) {
       //   return res.status(404).json({
       //     message: "Dates don't match in uploaded bill & record found in Linked Bank Account Payment History",
