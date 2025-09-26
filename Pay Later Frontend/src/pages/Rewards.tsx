@@ -10,8 +10,69 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Gift, Star, Trophy, Target, Calendar, Smartphone } from "lucide-react";
 import RewardsDashboardOverview from "@/components/RewardsDashboardOverView";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/axios";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface DashboardSummary {
+  totalPoints: number;
+  cashBack: number;
+  activeBills: number;
+  totalBills: number;
+  monthlyPoints: number;
+}
 
 const Rewards = () => {
+const { user } = useAuth();
+
+  const getTierInfo = (points: number) => {
+    if (points >= 10000)
+      return {
+        tier: "Platinum",
+        progress: 100,
+        nextTier: null,
+        pointsNeeded: 0,
+      };
+    if (points >= 5000)
+      return {
+        tier: "Gold",
+        progress: ((points - 5000) / 5000) * 100,
+        nextTier: "Platinum",
+        pointsNeeded: 10000 - points,
+      };
+    if (points >= 2000)
+      return {
+        tier: "Silver",
+        progress: ((points - 2000) / 3000) * 100,
+        nextTier: "Gold",
+        pointsNeeded: 5000 - points,
+      };
+    return {
+      tier: "Bronze",
+      progress: (points / 2000) * 100,
+      nextTier: "Silver",
+      pointsNeeded: 2000 - points,
+    };
+  };
+  const {
+    data: dashboardData,
+    isLoading,
+    error,
+    refetch
+  } = useQuery<DashboardSummary>({
+    queryKey: ['dashboardSummary'],
+    queryFn: async () => {
+      const response = await api.post('/user/dashboardSummary');
+      return response.data;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  const totalPoints = dashboardData?.totalPoints || 0;
+  const tierInfo = getTierInfo(totalPoints);
+
   const achievements = [
     {
       id: 1,
@@ -68,27 +129,48 @@ const Rewards = () => {
 
           <RewardsDashboardOverview />
 
-          <section className="my-12">
-            <h2 className="text-2xl font-bold mb-6">Your Rewards Tier</h2>
-            <Card className="bg-gradient-to-r from-primary/5 to-primary-glow/5 border-primary/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-primary" />
-                  Bronze Member
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Progress to Silver</span>
-                  <span className="text-sm font-medium">24,580 / 25,000 points</span>
-                </div>
-                <Progress value={98} className="h-2" />
-                <p className="text-sm text-muted-foreground">
-                  Just 420 more points to reach Silver tier and unlock exclusive benefits!
-                </p>
-              </CardContent>
-            </Card>
-          </section>
+          <Card className="bg-gradient-to-r from-primary/5 to-primary-glow/5 border-primary/20 my-12">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <Trophy className="w-5 h-5 text-primary" />
+      {tierInfo.tier} Member
+    </CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    <div className="flex items-center justify-between">
+
+      {tierInfo.nextTier && (
+        <p className="text-sm text-muted-foreground">
+          Progress to {tierInfo.nextTier} tier
+        </p>
+
+    )}
+      {tierInfo.nextTier && (
+  <span className="text-sm font-medium">
+    {totalPoints.toLocaleString()} / {(tierInfo.pointsNeeded + totalPoints).toLocaleString()} points
+  </span>
+)}
+
+    </div>
+
+    {tierInfo.nextTier && (
+      <div className="space-y-2">
+        <Progress value={tierInfo.progress} className="h-2" />
+        <p className="text-sm text-muted-foreground">
+          Just {tierInfo.pointsNeeded} more points to reach Silver tier and unlock exclusive benefits! points to {tierInfo.nextTier}
+        </p>
+      </div>
+    )}
+
+    {!tierInfo.nextTier && (
+      <p className="text-sm text-muted-foreground">
+        You’ve reached the highest tier — enjoy your rewards!
+      </p>
+    )}
+  </CardContent>
+</Card>
+
+
 
           {/* Achievements */}
           <section className="mb-12">

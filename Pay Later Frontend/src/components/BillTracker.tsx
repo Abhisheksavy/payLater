@@ -1,95 +1,54 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, DollarSign, Zap, Wifi, Car, Home } from "lucide-react";
+import { Zap, Home, Car, BookOpen, ShoppingCart, Phone, Heart, CreditCard, Globe, DollarSign, Wifi } from "lucide-react";
 import AddBillModal from "./AddBillModal";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 
-const BillTracker = () => {
-  const [bills, setBills] = useState([]);
-  const { user } = useAuth();
-  const { toast } = useToast();
+interface BillTrackerProps {
+  bills: any[];
+  refreshBills: () => void;
+}
 
-  useEffect(() => {
-    if (user) {
-      // Load user-specific bills
-      const userBillsKey = `bilt_bills_${user.id}`;
-      const savedBills = localStorage.getItem(userBillsKey);
-      if (savedBills) {
-        const parsedBills = JSON.parse(savedBills);
-        setBills(parsedBills.map((bill: any) => ({
-          ...bill,
-          icon: getIconForCategory(bill.category),
-          color: getColorForCategory(bill.category)
-        })));
-      }
-    }
-  }, [user]);
-
+const BillTracker = ({ bills, refreshBills }: BillTrackerProps) => {
   const getIconForCategory = (category: string) => {
     switch (category) {
-      case 'utilities': return Zap;
-      case 'housing': return Home;
-      case 'insurance': return Car;
-      default: return Wifi;
+      case "Housing": return Home;
+      case "Utilities": return Zap;
+      case "Subscriptions": return Wifi;
+      case "Insurance": return Car;
+      case "Education": return BookOpen;
+      case "Shopping & Retail": return ShoppingCart;
+      case "Phone & Internet": return Phone;
+      case "Car Payment": return CreditCard;
+      case "Health & Wellness": return Heart;
+      case "Other": return Globe;
+      default: return Globe;
     }
   };
 
   const getColorForCategory = (category: string) => {
     switch (category) {
-      case 'utilities': return 'text-yellow-500';
-      case 'housing': return 'text-purple-500';
-      case 'insurance': return 'text-green-500';
-      default: return 'text-blue-500';
-    }
-  };
-
-  const handleBillAdded = (newBill: any) => {
-    setBills(prev => [...prev, { 
-      ...newBill, 
-      icon: getIconForCategory(newBill.category),
-      color: getColorForCategory(newBill.category)
-    }]);
-  };
-
-  const handlePayBill = (billId: number) => {
-    if (!user) return;
-
-    setBills(prev => prev.map((bill: any) => 
-      bill.id === billId 
-        ? { ...bill, status: "paid" }
-        : bill
-    ));
-    
-    const bill = bills.find((b: any) => b.id === billId);
-    if (bill) {
-      // Update localStorage
-      const userBillsKey = `bilt_bills_${user.id}`;
-      const updatedBills = bills.map((b: any) => 
-        b.id === billId ? { ...b, status: "paid" } : b
-      );
-      localStorage.setItem(userBillsKey, JSON.stringify(updatedBills));
-
-      toast({
-        title: "Bill Paid Successfully!",
-        description: `You earned ${bill.points} points for paying ${bill.name}`,
-        variant: "default"
-      });
+      case "Housing": return "text-purple-500";
+      case "Utilities": return "text-yellow-500";
+      case "Subscriptions": return "text-pink-500";
+      case "Insurance": return "text-green-500";
+      case "Education": return "text-indigo-500";
+      case "Shopping & Retail": return "text-orange-500";
+      case "Phone & Internet": return "text-cyan-500";
+      case "Car Payment": return "text-red-500";
+      case "Health & Wellness": return "text-emerald-500";
+      case "Other": return "text-blue-500";
+      default: return "text-gray-500";
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'paid':
-        return <Badge className="bg-success text-success-foreground">Paid</Badge>;
-      case 'pending':
-        return <Badge variant="destructive">Due Soon</Badge>;
-      case 'scheduled':
-        return <Badge variant="secondary">Scheduled</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+      case "paid": return <Badge className="bg-success text-success-foreground">Paid</Badge>;
+      case "pending": return <Badge variant="destructive">Due Soon</Badge>;
+      case "scheduled": return <Badge variant="secondary">Scheduled</Badge>;
+      default: return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -101,7 +60,7 @@ const BillTracker = () => {
             <h2 className="text-3xl font-bold mb-2">Your Bills</h2>
             <p className="text-muted-foreground">Track and pay your bills to earn rewards</p>
           </div>
-          <AddBillModal onBillAdded={handleBillAdded}>
+          <AddBillModal onBillAdded={refreshBills}>
             <Button variant="customBlue">Add New Bill</Button>
           </AddBillModal>
         </div>
@@ -114,19 +73,19 @@ const BillTracker = () => {
               </div>
               <h3 className="text-lg font-semibold mb-2">No bills yet</h3>
               <p className="text-muted-foreground mb-4">Add your first bill to start earning rewards!</p>
-              <AddBillModal onBillAdded={handleBillAdded}>
+              <AddBillModal onBillAdded={refreshBills}>
                 <Button variant="customBlue">Add Your First Bill</Button>
               </AddBillModal>
             </div>
           ) : (
             bills.map((bill: any) => {
-              const IconComponent = bill.icon;
+              const IconComponent = getIconForCategory(bill.category);
               return (
                 <Card key={bill.id} className="group hover:shadow-soft transition-all duration-300">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg bg-secondary ${bill.color}`}>
+                        <div className={`p-2 rounded-lg bg-secondary ${getColorForCategory(bill.category)}`}>
                           <IconComponent className="w-5 h-5" />
                         </div>
                         <div>
@@ -137,19 +96,13 @@ const BillTracker = () => {
                       {getStatusBadge(bill.status)}
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <DollarSign className="w-4 h-4 text-muted-foreground" />
                         <span className="text-2xl font-bold">${bill.amount}</span>
                       </div>
-                      {bill.dueDate && (
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Due {bill.dueDate}</span>
-                        </div>
-                      )}
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/10">
@@ -158,24 +111,26 @@ const BillTracker = () => {
                     </div>
 
                     <div className="flex space-x-2">
-                      {bill.status === 'pending' && (
-                        <Button 
-                          className="flex-1" 
-                          variant="default"
-                          onClick={() => handlePayBill(bill.id)}
-                        >
-                          Pay Now
-                        </Button>
+                      {bill.status === "pending" && (
+                        <Button className="flex-1" variant="default">Pay Now</Button>
                       )}
-                      {bill.status === 'scheduled' && (
+                      {bill.status === "scheduled" && (
                         <Button className="flex-1" variant="outline">Edit Schedule</Button>
                       )}
-                      {bill.status === 'paid' && (
+                      {bill.status === "paid" && (
                         <Button className="flex-1" variant="success" disabled>
                           ✓ Paid
                         </Button>
                       )}
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (bill.fileUrl) {
+                            window.open(bill.fileUrl, "_blank");
+                          }
+                        }}
+                      >
                         View Details
                       </Button>
                     </div>
@@ -185,17 +140,6 @@ const BillTracker = () => {
             })
           )}
         </div>
-
-        {bills.length > 0 && (
-          <div className="mt-8 text-center">
-            <p className="text-muted-foreground mb-4">
-              Total potential rewards: <span className="font-bold text-primary">
-                +{bills.reduce((sum: number, bill: any) => sum + bill.points, 0)} points
-              </span>
-            </p>
-            <Button variant="outline">View All Bills</Button>
-          </div>
-        )}
       </div>
     </section>
   );

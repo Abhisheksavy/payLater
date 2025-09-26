@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import User from "../models/user.model.js";
+import User, { IAchievement } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { signAccessToken } from "../utils/jwt.js";
 import { ObjectId } from 'mongodb';
@@ -7,12 +7,44 @@ import { PendingBill } from "../models/pendingBill.model.js";
 import Reward from "../models/rewards.model.js";
 import { Transaction } from "../models/transactions.model.js";
 import { Bill, type IBill } from "../models/bills.model.js";
+import { TransactionHistory } from "../models/transactionHistory.model.js";
 
 interface AuthRequest extends Request {
   userId?: string;
 }
 
 class UserController {
+  private static defaultAchievements: IAchievement[] = [
+    {
+      id: 1,
+      title: "First Payment",
+      description: "Made your first bill payment",
+      earned: false,
+      icon: "Zap"
+
+    },
+    {
+      id: 2,
+      title: "On Time",
+      description: "Paid 5 bills on time",
+      earned: false,
+      icon: "Clock"
+    },
+    {
+      id: 3,
+      title: "Point Collector",
+      description: "Earned 1000+ points",
+      earned: false,
+      icon: "Trophy"
+    },
+    {
+      id: 4,
+      title: "Category Master",
+      description: "Paid bills in 3+ categories",
+      earned: false,
+      icon: "Target"
+    },
+  ];
 
   public async register(req: Request, res: Response): Promise<Response> {
     try {
@@ -25,7 +57,7 @@ class UserController {
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await User.create({ name, email, password: hashedPassword });
+      const user = await User.create({ name, email, password: hashedPassword, achievements: UserController.defaultAchievements });
 
       const token = signAccessToken({ id: user._id.toString(), email: user.email });
 
@@ -40,6 +72,7 @@ class UserController {
 
       return res.json({ id: user._id, name, email, createdAt: user.createdAt, token });
     } catch (err) {
+      console.log(err)
       return res.status(500).json({ message: "Server error" });
     }
   }
@@ -111,6 +144,27 @@ class UserController {
     }
   }
 
+  private billTypeMap: Record<string, string> = {
+    "rent|mortgage": "Housing",
+    "electric|water|gas|internet|phone|telecom": "Utilities",
+    "car|auto|vehicle": "Car Payment",
+    "netflix|spotify|prime|disney|hotstar|gym|club|itunes|apple|google play|apple music": "Subscriptions",
+    "insurance|premium|policy": "Insurance",
+    "loan|credit card|emi|payment": "Loan",
+    "maintenance|school|fees": "Education",
+    "health|wellness|fitness": "Health & Wellness",
+    "shopping|retail|clothing|amazon|mall": "Shopping & Retail",
+    ".*": "Other",
+  };
+
+  private classifyBill(text: string): IBill["billType"] {
+    for (const pattern in this.billTypeMap) {
+      const regex = new RegExp(pattern, "i");
+      if (regex.test(text)) return this.billTypeMap[pattern] as IBill["billType"];
+    }
+    return "Other";
+  }
+
   public async getDashboardSummary(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const userId = req.userId;
@@ -149,6 +203,59 @@ class UserController {
       });
     } catch (err) {
       console.error("Dashboard summary error:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  }
+
+  public getMonthlyDashboardSummary = async (req: AuthRequest, res: Response): Promise<Response> => {
+    try {
+      const userId = req.userId;
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      // Total spent this month
+      const transactions = await Transaction.find({
+        userId,
+        date: { $gte: startOfMonth }
+      });
+
+      const totalSpent = transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+      // Points earned this month
+      const rewards = await Reward.find({
+        userId,
+        createdAt: { $gte: startOfMonth }
+      });
+      const pointsEarned = rewards.reduce((sum, r) => sum + r.amount, 0);
+
+      // Bills paid this month
+      const billsPaid = await TransactionHistory.countDocuments({
+        userId,
+        paidDate: { $gte: startOfMonth }
+      });
+
+      // Spending by category
+      const spending: Record<string, number> = {};
+      transactions.forEach((txn) => {
+        const combinedText = `${txn.merchant || ""} ${txn.description || ""}`;
+        const category = this.classifyBill(combinedText);
+        const amount = Math.abs(txn.amount);
+        spending[category] = (spending[category] || 0) + amount;
+      });
+
+      Object.keys(spending).forEach((k) => {
+        spending[k] = Number(spending[k].toFixed(2));
+      });
+
+      return res.json({
+        totalSpent: Number(totalSpent.toFixed(2)),
+        pointsEarned,
+        billsPaid,
+        categories: Object.keys(spending).length
+      });
+    } catch (err) {
+      console.error("Monthly dashboard summary error:", err);
       return res.status(500).json({ message: "Server error" });
     }
   }
@@ -267,31 +374,31 @@ class UserController {
   }
 
   public async getUserAccounts(req: AuthRequest, res: Response): Promise<Response> {
-  try {
-    if (!req.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = await User.findById(req.userId);
+      console.log(user);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Map accounts to only return id + name
+      const accounts = (user.quilttAccounts || []).map(acc => ({
+        id: acc.id,
+        name: acc.name,
+      }));
+
+      return res.status(200).json({
+        accounts,
+      });
+    } catch (err) {
+      console.error("Error fetching user accounts:", err);
+      return res.status(500).json({ message: "Server error" });
     }
-
-    const user = await User.findById(req.userId);
-    console.log(user);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Map accounts to only return id + name
-    const accounts = (user.quilttAccounts || []).map(acc => ({
-      id: acc.id,
-      name: acc.name,
-    }));
-
-    return res.status(200).json({
-      accounts,
-    });
-  } catch (err) {
-    console.error("Error fetching user accounts:", err);
-    return res.status(500).json({ message: "Server error" });
   }
-}
 
   // Helper methods for bill detection (moved from bill controller)
   private detectFrequency = (dates: Date[]): "monthly" | "weekly" | "irregular" => {
@@ -308,23 +415,6 @@ class UserController {
     if (avg > 4 && avg <= 9) return "weekly";
     return "irregular";
   };
-
-  private classifyBill(text: string): IBill["billType"] {
-    const billTypeMap: Record<string, string> = {
-      "rent|mortgage": "Rent/Mortgage",
-      "electric|water|gas|internet|phone|telecom": "Utilities",
-      "netflix|spotify|prime|disney|hotstar|gym|club|itunes|apple|google play|apple music": "Subscription",
-      "insurance|premium|policy": "Insurance",
-      "loan|credit card|emi|payment": "Loan",
-      "maintenance|school|fees": "Other Fees",
-    };
-
-    for (const pattern in billTypeMap) {
-      const regex = new RegExp(pattern, "i");
-      if (regex.test(text)) return billTypeMap[pattern] as IBill["billType"];
-    }
-    return "Other";
-  }
 
   private addFrequency(date: Date, frequency: string): Date {
     const newDate = new Date(date);
@@ -398,7 +488,7 @@ class UserController {
   private async generateUpcomingBills(userId: string) {
     try {
       const bills = await Bill.find({ userId });
-      
+
       // Clear existing pending bills
       await PendingBill.deleteMany({ userId });
 
@@ -477,7 +567,7 @@ class UserController {
 
       // Detect bills from synced transactions
       const detectedBills = await this.detectBills(mongoUserId!);
-      
+
       // Generate upcoming bills based on detected bills
       const upcomingBills = await this.generateUpcomingBills(mongoUserId!);
 
@@ -502,6 +592,117 @@ class UserController {
       return res.status(500).json({ message: "Server error" });
     }
   };
+
+  public getSpendingByCategory = async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.userId;
+      const transactions = await Transaction.find({ userId });
+
+      const spending: Record<string, number> = {};
+
+      transactions.forEach((txn) => {
+        const combinedText = `${txn.merchant || ""} ${txn.description || ""}`;
+        const category = this.classifyBill(combinedText);
+        const amount = Math.abs(txn.amount);
+
+        spending[category] = (spending[category] || 0) + amount;
+      });
+      const roundedSpending: Record<string, number> = {};
+      for (const cat in spending) {
+        roundedSpending[cat] = parseFloat(spending[cat].toFixed(2));
+      }
+      return res.json({ spending: roundedSpending });
+    } catch (err) {
+      console.error("Error fetching spending:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  };
+
+  public getRecentActivity = async (req: AuthRequest, res: Response): Promise<Response> => {
+    try {
+      const userId = req.userId;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const recentActivities = await TransactionHistory.find({ userId })
+        .sort({ paidDate: -1 })
+        .limit(5)
+        .select("merchant description amount paidDate billId")
+        .lean();
+
+      return res.status(200).json({ recentActivities });
+    } catch (err) {
+      console.error("Error fetching recent activity:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  };
+
+  public getAchievements = async (req: AuthRequest, res: Response) => {
+    const user = await User.findById(req.userId);
+    return res.json(user?.achievements || []);
+  };
+
+  public async saveGoal(req: AuthRequest, res: Response): Promise<Response> {
+  try {
+    const { goal } = req.body;
+    const userId = req.userId
+
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    if (!goal || !goal.title || !goal.targetPoints || !goal.targetDate) {
+      return res.status(400).json({ message: "Missing required goal fields" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.goals = user.goals || [];
+    user.goals.push(goal);
+
+    await user.save();
+
+    return res.status(200).json({ message: "Goal saved successfully", goals: user.goals });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+public async saveReminder(req: AuthRequest, res: Response): Promise<Response> {
+  try {
+    const { reminder } = req.body;
+    const userId = req.userId
+
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    if (!reminder || !reminder.billId || !reminder.reminderDays || !reminder.reminderTime) {
+      return res.status(400).json({ message: "Missing required reminder fields" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.reminders = user.reminders || [];
+    user.reminders.push(reminder);
+
+    await user.save();
+
+    return res.status(200).json({ message: "Reminder saved successfully", reminders: user.reminders });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
 }
 
 export const userController = new UserController();

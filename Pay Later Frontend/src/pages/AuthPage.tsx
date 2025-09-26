@@ -82,7 +82,6 @@ const AuthPage = () => {
 
     setIsLoading(false);
 
-    console.log("here 7", result.success)
     if (result.success) {
       setActiveTab('login');
       console.log("here 8")

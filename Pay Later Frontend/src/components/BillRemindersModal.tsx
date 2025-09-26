@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Bell, Calendar, Clock, Trash2, Plus } from "lucide-react";
+import api from "@/lib/axios";
 
 interface BillRemindersModalProps {
   children: React.ReactNode;
@@ -41,7 +42,7 @@ const BillRemindersModal = ({ children }: BillRemindersModalProps) => {
     }
   }, [user]);
 
-  const handleCreateReminder = () => {
+  const handleCreateReminder = async () => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -73,6 +74,8 @@ const BillRemindersModal = ({ children }: BillRemindersModalProps) => {
       enabled: newReminder.enabled,
       createdAt: new Date().toISOString()
     };
+    
+    await api.post("/user/reminder", { reminder });
 
     const updatedReminders = [...reminders, reminder];
     setReminders(updatedReminders);

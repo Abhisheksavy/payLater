@@ -6,9 +6,11 @@ export interface ITransactionHistory extends Document {
   merchant: string;
   description: string;
   amount: number;
+  reward: number;
   paidDate: Date;
   createdAt: Date;
   updatedAt: Date;
+  fileUrl: String;
 }
 
 const TransactionHistorySchema: Schema<ITransactionHistory> = new Schema(
@@ -18,7 +20,9 @@ const TransactionHistorySchema: Schema<ITransactionHistory> = new Schema(
     merchant: { type: String, required: true },
     description: { type: String, required: true },
     amount: { type: Number, required: true },
+    reward: { type: Number, required: true },
     paidDate: { type: Date, required: true },
+    fileUrl: { type: String },
   },
   { timestamps: true }
 );

@@ -68,6 +68,20 @@ const Dashboard = () => {
   const queryClient = useQueryClient();
   const { refreshSession } = useQuilttSession();
   const [bills, setBills] = useState<Bill[]>([]);
+  const [spending, setSpending] = useState<Record<string, number>>({});
+  const [monthlyData, setMonthlyData] = useState<Record<string, number>>({});
+  const [recentActivity, setRecentActivity] = useState<
+    Array<{
+      _id: string;
+      billId: string;
+      merchant: string;
+      description: string;
+      amount: number;
+      paidDate: string;
+    }>
+  >([]);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const iconMap: Record<string, React.ElementType> = { Zap, Clock, Trophy, Target };
 
   // Fetch dashboard summary from API
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useQuery<DashboardSummary>({
@@ -130,16 +144,33 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    const fetchBills = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get("/bill/upcoming");
-        setBills(res.data || []);
+        const billsRes = await api.get("/bill/upcoming");
+        setBills(billsRes.data || []);
+
+        const spendRes = await api.get("/user/getSpendingByCategory");
+        setSpending(spendRes.data.spending || {});
+
+        const monthlyData = await api.get("/user/getMonthlyDashboardSummary");
+        setMonthlyData(monthlyData.data || {})
+
+        const recentActivity = await api.get("/user/recentActivity");
+        setRecentActivity(recentActivity.data.recentActivities || [])
+
+        const achRes = await api.get("/user/getAchievements");
+
+        const dynamicAchievements = achRes.data.map((a: any) => ({
+          ...a,
+          icon: iconMap[a.icon] || Zap
+        }));
+
+        setAchievements(dynamicAchievements);
       } catch (err) {
         console.error(err);
       }
     };
-    fetchBills();
-    console.log(bills)
+    fetchData();
   }, []);
 
   // Use dashboard data from API or fallback to defaults
@@ -190,13 +221,9 @@ const Dashboard = () => {
   };
 
   const tierInfo = getTierInfo(totalPoints);
-  console.log(bills)
+
   const upcomingBills = bills
     .filter((bill) => bill.status === "pending")
-    .slice(0, 3);
-  console.log(upcomingBills)
-  const recentActivity = bills
-    .filter((bill) => bill.status === "paid")
     .slice(0, 3);
 
   // Additional dashboard data
@@ -207,40 +234,7 @@ const Dashboard = () => {
     return acc;
   }, {} as Record<string, number>);
 
-  const achievements = [
-    {
-      id: 1,
-      title: "First Payment",
-      description: "Made your first bill payment",
-      earned: bills.some(b => b.status === 'paid') || totalPoints > 0,
-      icon: Zap,
-    },
-    {
-      id: 2,
-      title: "On Time",
-      description: "Paid 5 bills on time",
-      earned: bills.filter(b => b.status === 'paid').length >= 5 || totalPoints >= 100,
-      icon: Clock,
-    },
-    {
-      id: 3,
-      title: "Point Collector",
-      description: "Earned 1000+ points",
-      earned: totalPoints >= 1000,
-      icon: Trophy,
-    },
-    {
-      id: 4,
-      title: "Category Master",
-      description: "Paid bills in 3+ categories",
-      earned: Object.keys(categorySpending).length >= 3 || totalPoints >= 500,
-      icon: Target,
-    },
-  ];
 
-  const monthlySpending = bills
-    .filter((bill) => bill.status === "paid")
-    .reduce((total, bill) => total + bill.nextAmount, 0);
 
   const upcomingDueDates = bills
     .filter((bill) => bill.status === "pending")
@@ -365,7 +359,7 @@ const Dashboard = () => {
                 <DollarSign className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${cashBack.toFixed(2)}</div>
+                <div className="text-2xl font-bold">${(totalPoints / 100).toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">Ready to redeem</p>
               </CardContent>
             </Card>
@@ -443,30 +437,19 @@ const Dashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {Object.keys(categorySpending).length > 0 ? (
-                    <div className="space-y-4">
-                      {Object.entries(categorySpending).map(
-                        ([category, amount]) => {
-                          const percentage = (amount / monthlySpending) * 100;
-                          return (
-                            <div key={category} className="space-y-2">
-                              <div className="flex justify-between text-sm">
-                                <span className="capitalize">{category}</span>
-                                <span className="font-medium">
-                                  ${amount.toFixed(2)}
-                                </span>
-                              </div>
-                              <div className="w-full bg-muted rounded-full h-2">
-                                <div
-                                  className="bg-primary h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${percentage}%` }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        }
-                      )}
-                    </div>
+                  {Object.keys(spending).length > 0 ? (
+                    <table className="w-full text-sm">
+                      <tbody>
+                        {Object.entries(spending).map(([category, value]) => (
+                          <tr key={category} className="border-b last:border-0">
+                            <td className="py-2 capitalize">{category}</td>
+                            <td className="py-2 text-right font-medium">
+                              ${Number(value).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   ) : (
                     <p className="text-muted-foreground text-center py-8">
                       No spending data available
@@ -545,29 +528,29 @@ const Dashboard = () => {
                         <div
                           key={achievement.id}
                           className={`p-4 rounded-lg border ${achievement.earned
-                              ? "bg-primary/5 border-primary/20"
-                              : "bg-muted/50 border-muted"
+                            ? "bg-primary/5 border-primary/20"
+                            : "bg-muted/50 border-muted"
                             }`}
                         >
                           <div className="flex items-center gap-3">
                             <div
                               className={`p-2 rounded-full ${achievement.earned
-                                  ? "bg-primary/10"
-                                  : "bg-muted"
+                                ? "bg-primary/10"
+                                : "bg-muted"
                                 }`}
                             >
                               <Icon
                                 className={`w-4 h-4 ${achievement.earned
-                                    ? "text-primary"
-                                    : "text-muted-foreground"
+                                  ? "text-primary"
+                                  : "text-muted-foreground"
                                   }`}
                               />
                             </div>
                             <div>
                               <h4
                                 className={`font-medium ${achievement.earned
-                                    ? "text-foreground"
-                                    : "text-muted-foreground"
+                                  ? "text-foreground"
+                                  : "text-muted-foreground"
                                   }`}
                               >
                                 {achievement.title}
@@ -775,7 +758,7 @@ const Dashboard = () => {
                       Total Spent
                     </span>
                     <span className="font-medium">
-                      ${monthlySpending.toFixed(2)}
+                      ${monthlyData.totalSpent}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -783,7 +766,7 @@ const Dashboard = () => {
                       Points Earned
                     </span>
                     <span className="font-medium text-primary">
-                      {monthlyPoints}
+                      {monthlyData.pointsEarned}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -791,7 +774,7 @@ const Dashboard = () => {
                       Bills Paid
                     </span>
                     <span className="font-medium">
-                      {bills.filter((b) => b.status === "paid").length}
+                      {monthlyData.billsPaid}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -799,7 +782,7 @@ const Dashboard = () => {
                       Categories
                     </span>
                     <span className="font-medium">
-                      {Object.keys(categorySpending).length}
+                      {monthlyData.categories}
                     </span>
                   </div>
                 </CardContent>
@@ -871,18 +854,19 @@ const Dashboard = () => {
                     <div className="space-y-3">
                       {recentActivity.map((bill) => (
                         <div
-                          key={bill.id}
+                          key={bill._id}
                           className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                         >
                           <div>
-                            <p className="font-medium text-sm">{bill.name}</p>
+                            <p className="font-medium text-sm">{bill.description}</p>
+                            <p className="text-xs text-muted-foreground">{bill.merchant}</p>
                             <p className="text-xs text-muted-foreground">
-                              {bill.merchant}
+                              {new Date(bill.paidDate).toLocaleDateString()}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-medium">
-                              +{bill.rewards} pts
+                              ${Math.abs(bill.amount).toFixed(2)}
                             </p>
                             <Badge variant="secondary" className="text-xs">
                               Paid
@@ -897,6 +881,7 @@ const Dashboard = () => {
                     </p>
                   )}
                 </CardContent>
+
               </Card>
             </div>
           </div>

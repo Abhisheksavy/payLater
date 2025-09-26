@@ -10,6 +10,7 @@ import Reward from "../models/rewards.model.js";
 import fs from "fs";
 import pdf from "pdf-parse-new";
 import { put } from "@vercel/blob";
+import { v4 as uuidv4 } from 'uuid';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -277,8 +278,26 @@ export class RecurringBillController {
     }
   };
 
+  private async updateAchievements(userId: string) {
+    const user = await User.findById(userId);
+    if (!user) return;
 
-  public async verifyBillPayment(req: AuthRequest, res: Response): Promise<Response> {
+    const billsPaid = await TransactionHistory.countDocuments({ userId });
+    const categories = await Bill.distinct("billType", { userId, recurring: true });
+
+    const updates = user.achievements?.map(a => {
+      if (a.id === 1 && billsPaid >= 1) { a.earned = true; a.earnedAt ??= new Date(); }
+      if (a.id === 2 && billsPaid >= 5) { a.earned = true; a.earnedAt ??= new Date(); }
+      if (a.id === 3 && user.rewardPoints >= 1000) { a.earned = true; a.earnedAt ??= new Date(); }
+      if (a.id === 4 && categories.length >= 3) { a.earned = true; a.earnedAt ??= new Date(); }
+      return a;
+    });
+
+    user.achievements = updates;
+    await user.save();
+  }
+
+  public verifyBillPayment = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
       const userId = req.userId;
       console.log(req.body)
@@ -294,9 +313,8 @@ export class RecurringBillController {
       const dataBuffer = file.buffer;
 
       // // Upload to Vercel Blob
-      const { url } = await put(`bills/${file.originalname}`, dataBuffer, {
+      const { url } = await put(`bills/${Date.now()}-${uuidv4()}-${file.originalname}`, dataBuffer, {
         access: 'public',
-        allowOverwrite: true
       });
 
       // // url now contains the public URL of the uploaded PDF
@@ -347,30 +365,42 @@ export class RecurringBillController {
         });
       }
 
-      if (new Date(txn.date).getTime() !== pdfDate.getTime()) {
-        return res.status(404).json({
-          message: "Dates don't match in uploaded bill & record found in Linked Bank Account Payment History",
-        });
+      if (!user) {
+        return res.status(400).json({ message: "PDF file is required" });
       }
 
-      if (txn.merchant !== req.body.company) {
-        return res.status(404).json({
-          message: "Merchant does not match between uploaded bill & Linked Bank Account Payment History",
+      const userCreatedAt = new Date(user.createdAt);
+      if (pdfDate.getTime() < userCreatedAt.getTime()) {
+        return res.status(400).json({
+          message: "Bill date cannot be earlier than your account creation date",
         });
       }
+      
+      // if (new Date(txn.date).getTime() !== pdfDate.getTime()) {
+      //   return res.status(404).json({
+      //     message: "Dates don't match in uploaded bill & record found in Linked Bank Account Payment History",
+      //   });
+      // }
 
-      const normalizedTxnAmount = Math.abs(Number(txn.amount));
-      const normalizedReqAmount = Math.abs(Number(req.body.amount));
-      const normalizedPdfAmount = Math.abs(Number(pdfAmount));
+      // if (txn.merchant !== req.body.company) {
+      //   return res.status(404).json({
+      //     message: "Merchant does not match between uploaded bill & Linked Bank Account Payment History",
+      //   });
+      // }
 
-      if (normalizedTxnAmount !== normalizedReqAmount || normalizedTxnAmount !== normalizedPdfAmount) {
-        console.log("txn.amount", normalizedTxnAmount);
-        console.log("req.body.amount", normalizedReqAmount);
-        console.log("pdfAmount", normalizedPdfAmount);
-        return res.status(404).json({
-          message: "Amount does not match between uploaded bill & Linked Bank Account Payment History",
-        });
-      }
+
+      // const normalizedTxnAmount = Math.abs(Number(txn.amount));
+      // const normalizedReqAmount = Math.abs(Number(req.body.amount));
+      // const normalizedPdfAmount = Math.abs(Number(pdfAmount));
+
+      // if (normalizedTxnAmount !== normalizedReqAmount || normalizedTxnAmount !== normalizedPdfAmount) {
+      //   console.log("txn.amount", normalizedTxnAmount);
+      //   console.log("req.body.amount", normalizedReqAmount);
+      //   console.log("pdfAmount", normalizedPdfAmount);
+      //   return res.status(404).json({
+      //     message: "Amount does not match between uploaded bill & Linked Bank Account Payment History",
+      //   });
+      // }
 
       const billTypeMap: Record<string, string> = {
         "rent|mortgage": "Housing",
@@ -416,6 +446,10 @@ export class RecurringBillController {
         { new: true }
       );
 
+      if (userId) await this.updateAchievements(userId);
+
+
+
       await Reward.create({
         userId,
         transactionHistoryId: txn._id,
@@ -430,7 +464,9 @@ export class RecurringBillController {
         merchant: txn.merchant,
         description: txn.description,
         amount: txn.amount,
+        reward: rewardPoints,
         paidDate: new Date(),
+        fileUrl: url,
       });
       return res.json({
         message: "Bill verified and reward credited",
@@ -630,4 +666,17 @@ export class RecurringBillController {
   //   }
   // }
 
+
+  public async getUploadedBills(req: AuthRequest, res: Response) {
+    try {
+      const bills = await TransactionHistory.find({ userId: req.userId });
+      return res.json(bills);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  }
+
 }
+
+

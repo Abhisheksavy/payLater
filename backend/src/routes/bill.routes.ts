@@ -18,5 +18,6 @@ router.post("/payBill", authCheck, billController.payBill);
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 router.post("/verifyBillPayment", authCheck, upload.single("pdf"), billController.verifyBillPayment);
+router.get("/getUploadedBills", authCheck, billController.getUploadedBills)
 
 export default router;

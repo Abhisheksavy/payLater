@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Target, Trophy, DollarSign, Star, Gift, Plane } from "lucide-react";
+import api from "@/lib/axios";
 
 interface SetGoalsModalProps {
   children: React.ReactNode;
@@ -42,7 +43,7 @@ const SetGoalsModal = ({ children }: SetGoalsModalProps) => {
     { title: "Shopping Spree", points: 5000, category: "shopping", icon: Gift }
   ];
 
-  const handleCreateGoal = () => {
+  const handleCreateGoal = async () => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -71,6 +72,8 @@ const SetGoalsModal = ({ children }: SetGoalsModalProps) => {
       createdAt: new Date().toISOString(),
       status: 'active'
     };
+    
+    await api.post("/user/goal", { goal });
 
     const updatedGoals = [...goals, goal];
     setGoals(updatedGoals);
